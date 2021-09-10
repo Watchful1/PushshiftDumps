@@ -1,3 +1,5 @@
+# this is an example of loading and iterating over a single file
+
 import zstandard
 import os
 import json
@@ -29,7 +31,7 @@ def read_lines_zst(file_name):
 
 
 if __name__ == "__main__":
-	file_path = r"\\MYCLOUDPR4100\Public\reddit\submissions\RS_2013-03.zst"
+	file_path = sys.argv[1]
 	file_size = os.stat(file_path).st_size
 	file_lines = 0
 	file_bytes_processed = 0
