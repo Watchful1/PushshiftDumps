@@ -1,12 +1,7 @@
 # this script iterates through zst compressed ndjson files, like the pushshift reddit dumps, loads each line
-# and passes it into the save_obj function, if it function returns true for a line, it's written out into a
-# separate file for that month. After all the ndjson files are processed, it iterates through the resulting
-# files and combines them into a final file.
-
-# once complete, the combined file can easily be processed like
-# with open(file_path, 'r') as file:
-#     for line in file:
-#         obj = json.loads(line)
+# and if it matches the criteria in the command line arguments, it's written out into a separate file for
+# that month. After all the ndjson files are processed, it iterates through the resulting files and combines
+# them into a final file.
 
 # features:
 #  - multiple processes in parallel to maximize drive read and decompression
@@ -133,7 +128,8 @@ def read_lines_zst(file_name):
 
 
 # base of each separate process. Loads a file, iterates through lines and writes out
-# the ones where save_obj() returns true. Also passes status information back to the parent via a queue
+# the ones where the `field` of the object matches `value`. Also passes status
+# information back to the parent via a queue
 def process_file(file, working_folder, queue, field, value):
 	output_file = None
 	try:
