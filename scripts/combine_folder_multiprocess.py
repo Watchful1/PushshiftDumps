@@ -202,6 +202,7 @@ if __name__ == '__main__':
 	total_bytes = 0
 	total_bytes_processed = 0
 	total_lines_processed = 0
+	total_lines_errored = 0
 	files_to_process = []
 	# calculate the total file size for progress reports, build a list of incomplete files to process
 	for file in input_files:
@@ -210,6 +211,7 @@ if __name__ == '__main__':
 			files_processed += 1
 			total_lines_processed += file.lines_processed
 			total_bytes_processed += file.file_size
+			total_lines_errored += file.error_lines
 		else:
 			files_to_process.append(file)
 
@@ -297,15 +299,16 @@ if __name__ == '__main__':
 	output_lines = 0
 	output_file_path = os.path.join(args.output, args.name + ".zst")
 	# combine all the output files into the final results file
-	with open(output_file_path, 'w') as output_file:
+	with open(output_file_path, 'wb') as output_file:
 		files_combined = 0
 		writer = zstandard.ZstdCompressor().stream_writer(output_file)
 		for working_file_path in working_file_paths:
 			files_combined += 1
 			log.info(f"Reading {files_combined}/{len(working_file_paths)}")
 			with open(working_file_path, 'r') as input_file:
-				for line in input_file.readlines():
+				for line in input_file:
 					output_lines += 1
-					writer.write(line.encode('utf-8'))
+					encoded_line = line.encode('utf-8')
+					writer.write(encoded_line)
 
 	log.info(f"Finished combining files, {output_lines:,} lines written to {output_file_path}")
