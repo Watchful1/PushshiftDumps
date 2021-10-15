@@ -5,6 +5,8 @@ name = "pypi"
 
 [packages]
 zstandard = "*"
+discord-logging = {editable = true, git = "https://github.com/Watchful1/DiscordLogging.git"}
+requests = "*"
 
 [dev-packages]
 

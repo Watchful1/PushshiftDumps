@@ -1,6 +1,7 @@
 .idea/*
 logs/*
 __pycache__/*
+personal/*
 *.db
 *.ini
 *.txt
