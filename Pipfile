@@ -7,6 +7,7 @@ name = "pypi"
 zstandard = "*"
 discord-logging = {editable = true, git = "https://github.com/Watchful1/DiscordLogging.git"}
 requests = "*"
+pymongo = {extras = ["srv"], version = "*"}
 
 [dev-packages]
 

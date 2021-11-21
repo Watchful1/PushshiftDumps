@@ -174,7 +174,7 @@ if __name__ == '__main__':
 	parser.add_argument("output", help="The output folder to store temporary files in and write the output to")
 	parser.add_argument("--name", help="What to name the output file", default="pushshift")
 	parser.add_argument("--field", help="When deciding what lines to keep, use this field for comparisons", default="subreddit")
-	parser.add_argument("--value", help="When deciding what lines to keep, compare the field to this value. Supports a comma separated list", default="pushshift")
+	parser.add_argument("--value", help="When deciding what lines to keep, compare the field to this value. Supports a comma separated list. This is case sensitive", default="pushshift")
 	parser.add_argument("--processes", help="Number of processes to use", default=10, type=int)
 	parser.add_argument(
 		"--error_rate", help=
