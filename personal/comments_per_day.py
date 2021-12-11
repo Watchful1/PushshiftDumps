@@ -1,0 +1,21 @@
+import utils
+import discord_logging
+from datetime import datetime
+
+log = discord_logging.init_logging()
+
+
+if __name__ == "__main__":
+	day = None
+	day_comments = 0
+	for comment in utils.read_obj_zst(r"\\MYCLOUDPR4100\Public\reddit_final\wallstreetbets_comments.zst"):
+		created_day = datetime.utcfromtimestamp(int(comment['created_utc'])).strftime("%m/%d/%y")
+		if day is None:
+			day = created_day
+		if day != created_day:
+			log.info(f"{day}	{day_comments}")
+			day_comments = 0
+			day = created_day
+		day_comments += 1
+
+	log.info(f"{day}	{day_comments}")
