@@ -8,11 +8,11 @@ log = discord_logging.init_logging()
 
 if __name__ == "__main__":
 	subreddits = {}
-	object_type = "submissions"
-	folder = f"\\\\MYCLOUDPR4100\\Public\\reddit_final\\{object_type}"
+	object_type = "comments"
+	folder = f"\\\\MYCLOUDPR4100\\Public\\reddit_final\\ratmanreturns265_{object_type}"
 	if not os.path.exists(folder):
 		os.makedirs(folder)
-	input_file = f"\\\\MYCLOUDPR4100\\Public\\reddit_final\\relationships_{object_type}.zst"
+	input_file = f"\\\\MYCLOUDPR4100\\Public\\reddit_final\\ratmanreturns265_{object_type}.zst"
 	input_file_size = os.stat(input_file).st_size
 	total_lines = 0
 	for comment, line, file_bytes_processed in utils.read_obj_zst_meta(input_file):
