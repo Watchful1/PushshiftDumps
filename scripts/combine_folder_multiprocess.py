@@ -213,6 +213,7 @@ if __name__ == '__main__':
 		input_files = []
 		for subdir, dirs, files in os.walk(args.input):
 			files.sort()
+			files.reverse()
 			for file_name in files:
 				if file_name.endswith(".zst"):
 					input_path = os.path.join(subdir, file_name)
