@@ -56,10 +56,11 @@ if __name__ == "__main__":
 		for line, file_bytes_processed in read_lines_zst(input_file_path):
 			try:
 				obj = json.loads(line)
-				output_obj = []
-				for field in fields:
-					output_obj.append(obj[field].encode("utf-8", errors='replace').decode())
-				writer.writerow(output_obj)
+				if "social dilemma" in obj['body'].lower():
+					output_obj = []
+					for field in fields:
+						output_obj.append(str(obj[field]).encode("utf-8", errors='replace').decode())
+					writer.writerow(output_obj)
 
 				created = datetime.utcfromtimestamp(int(obj['created_utc']))
 			except json.JSONDecodeError as err:
