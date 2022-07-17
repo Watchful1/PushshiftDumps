@@ -8,7 +8,7 @@ log = discord_logging.init_logging()
 
 
 if __name__ == "__main__":
-	input_path = r"\\MYCLOUDPR4100\Public\reddit\requests\jeanyp"
+	input_path = r"\\MYCLOUDPR4100\Public\reddit\requests\wallstreetbets_comments.zst"
 
 	input_file_paths = []
 	if os.path.isdir(input_path):
@@ -27,11 +27,16 @@ if __name__ == "__main__":
 		file_lines = 0
 		file_bytes_processed = 0
 		created = None
+		previous_timestamp = None
 		inserts = []
 		for obj, line, file_bytes_processed in utils.read_obj_zst_meta(file_path):
-			created = datetime.utcfromtimestamp(int(obj['created_utc']))
+			new_timestamp = int(obj['created_utc'])
+			created = datetime.utcfromtimestamp(new_timestamp)
+			if previous_timestamp is not None and previous_timestamp - (60 * 60 * 4) > new_timestamp:
+				log.warning(f"Out of order timestamps {datetime.utcfromtimestamp(previous_timestamp).strftime('%Y-%m-%d %H:%M:%S')} - 4 hours > {created.strftime('%Y-%m-%d %H:%M:%S')}")
+			previous_timestamp = new_timestamp
 			file_lines += 1
-			if file_lines % 100000 == 0:
+			if file_lines % 10000 == 0:
 				log.info(f"{files_processed}/{len(input_file_paths)}: {file_name} : {created.strftime('%Y-%m-%d %H:%M:%S')} : {file_lines:,} : {(file_bytes_processed / file_size) * 100:.0f}%")
 
 		log.info(f"{files_processed}/{len(input_file_paths)}: {file_name} : {created.strftime('%Y-%m-%d %H:%M:%S')} : {file_lines:,} : 100%")

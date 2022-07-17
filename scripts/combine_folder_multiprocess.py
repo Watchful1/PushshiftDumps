@@ -108,6 +108,20 @@ def load_file_list(output_folder, output_file_name):
 		return None
 
 
+# recursively decompress and decode a chunk of bytes. If there's a decode error then read another chunk and try with that, up to a limit of max_window_size bytes
+def read_and_decode(reader, chunk_size, max_window_size, previous_chunk=None, bytes_read=0):
+	chunk = reader.read(chunk_size)
+	bytes_read += chunk_size
+	if previous_chunk is not None:
+		chunk = previous_chunk + chunk
+	try:
+		return chunk.decode()
+	except UnicodeDecodeError:
+		if bytes_read > max_window_size:
+			raise UnicodeError(f"Unable to decode frame after reading {bytes_read:,} bytes")
+		return read_and_decode(reader, chunk_size, max_window_size, chunk, bytes_read)
+
+
 # open a zst compressed ndjson file and yield lines one at a time
 # also passes back file progress
 def read_lines_zst(file_name):
@@ -115,12 +129,7 @@ def read_lines_zst(file_name):
 		buffer = ''
 		reader = zstandard.ZstdDecompressor(max_window_size=2**31).stream_reader(file_handle)
 		while True:
-			data_chunk = reader.read(2**27)
-			try:
-				chunk = data_chunk.decode()
-			except UnicodeDecodeError:
-				data_chunk += reader.read(2**29)
-				chunk = data_chunk.decode()
+			chunk = read_and_decode(reader, 2**27, (2**29) * 2)
 			if not chunk:
 				break
 			lines = (buffer + chunk).split("\n")
@@ -257,7 +266,7 @@ if __name__ == '__main__':
 		progress_queue.put([start_time, total_lines_processed, total_bytes_processed])
 		speed_queue = Queue(40)
 		for file in files_to_process:
-			log.debug(f"Processing file: {file.input_path}")
+			log.info(f"Processing file: {file.input_path}")
 		# start the workers
 		with multiprocessing.Pool(processes=min(args.processes, len(files_to_process))) as pool:
 			workers = pool.starmap_async(process_file, [(file, working_folder, queue, args.field, value, values, args.case_sensitive) for file in files_to_process], error_callback=log.info)
@@ -282,6 +291,7 @@ if __name__ == '__main__':
 					total_bytes_processed += file.bytes_processed
 					total_lines_errored += file.error_lines
 					files_processed += 1 if file.complete or file.error_message is not None else 0
+					files_errored += 1 if file.error_message is not None else 0
 					i += 1
 				if file_update.complete or file_update.error_message is not None:
 					save_file_list(input_files, args.output, args.name)

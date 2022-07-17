@@ -13,21 +13,27 @@ log.setLevel(logging.DEBUG)
 log.addHandler(logging.StreamHandler())
 
 
+def read_and_decode(reader, chunk_size, max_window_size, previous_chunk=None, bytes_read=0):
+	chunk = reader.read(chunk_size)
+	bytes_read += chunk_size
+	if previous_chunk is not None:
+		chunk = previous_chunk + chunk
+	try:
+		return chunk.decode()
+	except UnicodeDecodeError:
+		if bytes_read > max_window_size:
+			raise UnicodeError(f"Unable to decode frame after reading {bytes_read:,} bytes")
+		log.info(f"Decoding error with {bytes_read:,} bytes, reading another chunk")
+		return read_and_decode(reader, chunk_size, max_window_size, chunk, bytes_read)
+
+
 def read_lines_zst(file_name):
-	skip_to = 3566550750
-	bytes_read = 0
 	with open(file_name, 'rb') as file_handle:
 		buffer = ''
 		reader = zstandard.ZstdDecompressor(max_window_size=2**31).stream_reader(file_handle)
 		#reader.read(40000000000)
 		while True:
-			data_chunk = reader.read(2**27)
-			try:
-				chunk = data_chunk.decode()
-			except UnicodeDecodeError:
-				log.info("Decoding error, reading a second chunk")
-				data_chunk += reader.read(2**29)
-				chunk = data_chunk.decode()
+			chunk = read_and_decode(reader, 2**27, (2**29) * 2)
 
 			if not chunk:
 				break
