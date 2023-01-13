@@ -8,17 +8,18 @@ log = discord_logging.init_logging()
 
 if __name__ == "__main__":
 	subreddits = {}
-	object_type = "comments"
-	folder = f"\\\\MYCLOUDPR4100\\Public\\reddit_final\\ratmanreturns265_{object_type}"
+	field = 'subreddit'
+	object_type = "submissions"
+	folder = f"\\\\MYCLOUDPR4100\\Public\\reddit_final\\multisub_{object_type}"
 	if not os.path.exists(folder):
 		os.makedirs(folder)
-	input_file = f"\\\\MYCLOUDPR4100\\Public\\reddit_final\\ratmanreturns265_{object_type}.zst"
+	input_file = f"\\\\MYCLOUDPR4100\\Public\\reddit_final\\multisub_{object_type}.zst"
 	input_file_size = os.stat(input_file).st_size
 	total_lines = 0
 	for comment, line, file_bytes_processed in utils.read_obj_zst_meta(input_file):
-		if comment['subreddit'] not in subreddits:
-			subreddits[comment['subreddit']] = {'writer': utils.OutputZst(os.path.join(folder, comment['subreddit'] + f"_{object_type}.zst")), 'lines': 0}
-		subreddit = subreddits[comment['subreddit']]
+		if comment[field] not in subreddits:
+			subreddits[comment[field]] = {'writer': utils.OutputZst(os.path.join(folder, comment[field] + f"_{object_type}.zst")), 'lines': 0}
+		subreddit = subreddits[comment[field]]
 		subreddit['writer'].write(line)
 		subreddit['writer'].write("\n")
 		subreddit['lines'] += 1
