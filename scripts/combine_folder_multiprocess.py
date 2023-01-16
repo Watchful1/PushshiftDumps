@@ -154,7 +154,7 @@ def process_file(file, queue, field, value, values, case_sensitive):
 
 				if matched:
 					if output_file is None:
-						output_file = open(file.output_path, 'w')
+						output_file = open(file.output_path, 'w', encoding="utf-8")
 					output_file.write(line)
 					output_file.write("\n")
 			except (KeyError, json.JSONDecodeError) as err:
