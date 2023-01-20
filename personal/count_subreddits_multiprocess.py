@@ -1,22 +1,3 @@
-# this script iterates through zst compressed ndjson files, like the pushshift reddit dumps, loads each line
-# and if it matches the criteria in the command line arguments, it's written out into a separate file for
-# that month. After all the ndjson files are processed, it iterates through the resulting files and combines
-# them into a final file.
-
-# this script assumes the files are named in chronological order and prefixed with RS_ or RC_, like the pushshift dumps
-
-# features:
-#  - multiple processes in parallel to maximize drive read and decompression
-#  - saves state as it completes each file and picks up where it stopped
-#  - detailed progress indicators
-
-# examples:
-#  - get all comments that have a subreddit field (subreddit is the default) of "wallstreetbets". This will create a single output file "wallstreetbets_comments.zst" in the folder the script is run in
-#    python3 combine_folder_multiprocess.py reddit/comments --value wallstreetbets
-#  - get all comments and submissions (assuming both types of dump files are under the reddit folder) that have an author field of Watchful1 or spez and output the results to a folder called pushshift.
-#    This will result in four files, pushshift/Watchful1_comments, pushshift/Watchful1_submissions, pushshift/spez_comments, pushshift/spez_submissions
-#    python3 combine_folder_multiprocess.py reddit --field author --value Watchful1,spez --output pushshift
-
 import zstandard
 import os
 import json
@@ -24,6 +5,7 @@ import sys
 import time
 import argparse
 import re
+from collections import defaultdict
 from datetime import datetime
 import logging.handlers
 import multiprocessing
@@ -78,7 +60,7 @@ class Queue:
 
 # save file information and progress to a json file
 # we don't want to save the whole FileConfig object, since some info resets if we restart
-def save_file_list(input_files, working_folder, status_json, arg_string, script_type):
+def save_file_list(input_files, working_folder, status_json, script_type):
 	if not os.path.exists(working_folder):
 		os.makedirs(working_folder)
 	simple_file_list = []
@@ -86,9 +68,8 @@ def save_file_list(input_files, working_folder, status_json, arg_string, script_
 		simple_file_list.append([file.input_path, file.output_path, file.complete, file.lines_processed, file.error_lines])
 	with open(status_json, 'w') as status_json_file:
 		output_dict = {
-			"args": arg_string,
-			"type": script_type,
 			"files": simple_file_list,
+			"type": script_type,
 		}
 		status_json_file.write(json.dumps(output_dict, indent=4))
 
@@ -103,9 +84,9 @@ def load_file_list(status_json):
 				input_files.append(
 					FileConfig(simple_file[0], simple_file[1], simple_file[2], simple_file[3], simple_file[4])
 				)
-			return input_files, output_dict["args"], output_dict["type"]
+			return input_files, output_dict["type"]
 	else:
-		return None, None, None
+		return None, None
 
 
 # recursively decompress and decode a chunk of bytes. If there's a decode error then read another chunk and try with that, up to a limit of max_window_size bytes
@@ -144,26 +125,18 @@ def read_lines_zst(file_name):
 # base of each separate process. Loads a file, iterates through lines and writes out
 # the ones where the `field` of the object matches `value`. Also passes status
 # information back to the parent via a queue
-def process_file(file, queue, field, value, values, case_sensitive):
+def process_file(file, queue, field):
 	output_file = None
 	log.debug(f"Starting file: {file.input_path} : {file.file_size:,}")
 	try:
 		for line, file_bytes_processed in read_lines_zst(file.input_path):
 			try:
 				obj = json.loads(line)
-				matched = False
-				observed = obj[field] if case_sensitive else obj[field].lower()
-				if value is not None:
-					if observed == value:
-						matched = True
-				elif observed in values:
-					matched = True
-
-				if matched:
-					if output_file is None:
-						output_file = open(file.output_path, 'w', encoding="utf-8")
-					output_file.write(line)
-					output_file.write("\n")
+				observed = obj[field].lower()
+				if output_file is None:
+					output_file = open(file.output_path, 'w', encoding="utf-8")
+				output_file.write(observed)
+				output_file.write("\n")
 			except (KeyError, json.JSONDecodeError) as err:
 				file.error_lines += 1
 			file.lines_processed += 1
@@ -185,23 +158,20 @@ def process_file(file, queue, field, value, values, case_sensitive):
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description="Use multiple processes to decompress and iterate over pushshift dump files")
 	parser.add_argument("input", help="The input folder to recursively read files from")
-	parser.add_argument("--split", help="Split the output into separate files by the filter fields, only applies if there's multiple fields", action='store_const', const=True, default=True)
-	parser.add_argument("--output", help="Put the output files in this folder", default="")
+	parser.add_argument("--output", help="Name of the output file", default="field_counts")
 	parser.add_argument("--working", help="The folder to store temporary files in", default="pushshift_working")
-	parser.add_argument("--field", help="When deciding what lines to keep, use this field for comparisons", default="subreddit")
-	parser.add_argument("--value", help="When deciding what lines to keep, compare the field to this value. Supports a comma separated list. This is case sensitive", default="pushshift")
+	parser.add_argument("--field", help="Which field to count", default="subreddit")
+	parser.add_argument("--min_count", help="Dont write any counts below this number", default=1000)
 	parser.add_argument("--processes", help="Number of processes to use", default=10, type=int)
-	parser.add_argument("--case-sensitive", help="Matching should be case sensitive", action="store_true")
 	parser.add_argument("--file_filter", help="Regex filenames have to match to be processed", default="^rc_|rs_")
 	parser.add_argument(
 		"--error_rate", help=
 		"Percentage as an integer from 0 to 100 of the lines where the field can be missing. For the subreddit field especially, "
 		"there are a number of posts that simply don't have a subreddit attached", default=1, type=int)
 	parser.add_argument("--debug", help="Enable debug logging", action='store_const', const=True, default=False)
-	script_type = "split"
+	script_type = "count"
 
 	args = parser.parse_args()
-	arg_string = f"{args.field}:{args.value}:{args.case_sensitive}"
 
 	if args.debug:
 		log.setLevel(logging.DEBUG)
@@ -212,31 +182,10 @@ if __name__ == '__main__':
 	else:
 		log.info(f"Writing output to working folder")
 
-	if not args.case_sensitive:
-		args.value = args.value.lower()
-
-	value_strings = args.value.split(",")
-	value = None
-	values = None
-	if len(value_strings) > 1:
-		values = set()
-		for value_inner in value_strings:
-			values.add(value_inner)
-		log.info(f"Checking field {args.field} for values {(', '.join(value_strings))}")
-	elif len(value_strings) == 1:
-		value = value_strings[0]
-		log.info(f"Checking field {args.field} for value {value}")
-	else:
-		log.info(f"Invalid value specified, aborting: {args.value}")
-		sys.exit()
-
 	multiprocessing.set_start_method('spawn')
 	queue = multiprocessing.Manager().Queue()
 	status_json = os.path.join(args.working, "status.json")
-	input_files, saved_arg_string, saved_type = load_file_list(status_json)
-	if saved_arg_string and saved_arg_string != arg_string:
-		log.warning(f"Args don't match args from json file. Delete working folder")
-		sys.exit(0)
+	input_files, saved_type = load_file_list(status_json)
 
 	if saved_type and saved_type != script_type:
 		log.warning(f"Script type doesn't match type from json file. Delete working folder")
@@ -253,7 +202,7 @@ if __name__ == '__main__':
 					output_path = os.path.join(args.working, file_name[:-4])
 					input_files.append(FileConfig(input_path, output_path=output_path))
 
-		save_file_list(input_files, args.working, status_json, arg_string, script_type)
+		save_file_list(input_files, args.working, status_json, script_type)
 	else:
 		log.info(f"Existing input file was read, if this is not correct you should delete the {args.working} folder and run this script again")
 
@@ -286,7 +235,7 @@ if __name__ == '__main__':
 			log.info(f"Processing file: {file.input_path}")
 		# start the workers
 		with multiprocessing.Pool(processes=min(args.processes, len(files_to_process))) as pool:
-			workers = pool.starmap_async(process_file, [(file, queue, args.field, value, values, args.case_sensitive) for file in files_to_process], error_callback=log.info)
+			workers = pool.starmap_async(process_file, [(file, queue, args.field) for file in files_to_process], error_callback=log.info)
 			while not workers.ready():
 				# loop until the workers are all done, pulling in status messages as they are sent
 				file_update = queue.get()
@@ -311,7 +260,7 @@ if __name__ == '__main__':
 					files_errored += 1 if file.error_message is not None else 0
 					i += 1
 				if file_update.complete or file_update.error_message is not None:
-					save_file_list(input_files, args.working, status_json, arg_string, script_type)
+					save_file_list(input_files, args.working, status_json, script_type)
 				current_time = time.time()
 				progress_queue.put([current_time, total_lines_processed, total_bytes_processed])
 
@@ -357,57 +306,22 @@ if __name__ == '__main__':
 
 	log.info(f"Processing complete, combining {len(working_file_paths)} result files")
 
-	output_lines = 0
-	all_handles = []
-	output_handles = {}
+	input_lines = 0
 	files_combined = 0
-	if args.split and values:
-		split = True
-	else:
-		split = False
+	field_counts = defaultdict(int)
 	for working_file_path in working_file_paths:
 		files_combined += 1
-		log.info(f"Reading {files_combined}/{len(working_file_paths)} : {os.path.split(working_file_path)[1]}")
-		working_file_name = os.path.split(working_file_path)[1]
-		if working_file_name.startswith("RS"):
-			file_type = "submissions"
-		elif working_file_name.startswith("RC"):
-			file_type = "comments"
-		else:
-			log.warning(f"Unknown working file type, skipping: {working_file_name}")
-			continue
-		if file_type not in output_handles:
-			output_handles[file_type] = {}
-		file_type_handles = output_handles[file_type]
+		log.info(f"Reading {files_combined}/{len(working_file_paths)} : {input_lines:,} : {len(field_counts):,} : {os.path.split(working_file_path)[1]}")
 		with open(working_file_path, 'r') as input_file:
 			for line in input_file:
-				output_lines += 1
-				if split:
-					obj = json.loads(line)
-					observed_case = obj[args.field]
-				else:
-					observed_case = value
-				observed = observed_case if args.case_sensitive else observed_case.lower()
-				if observed not in file_type_handles:
-					if args.output:
-						if not os.path.exists(args.output):
-							os.makedirs(args.output)
-						output_file_path = os.path.join(args.output, f"{observed_case}_{file_type}.zst")
-					else:
-						output_file_path = f"{observed_case}_{file_type}.zst"
-					log.info(f"Writing to file {output_file_path}")
-					file_handle = open(output_file_path, 'wb')
-					writer = zstandard.ZstdCompressor().stream_writer(file_handle)
-					file_type_handles[observed] = writer
-					all_handles.append(writer)
-					all_handles.append(file_handle)
-				else:
-					writer = file_type_handles[observed]
+				input_lines += 1
+				field_counts[line.strip()] += 1
 
-				encoded_line = line.encode('utf-8')
-				writer.write(encoded_line)
+	output_counts = 0
+	with open(f"{args.output}.txt", 'w') as output_handle:
+		for field, count in field_counts.items():
+			if count >= args.min_count:
+				output_counts += 1
+				output_handle.write(f"{field}	{count}\n")
 
-	for handle in all_handles:
-		handle.close()
-
-	log.info(f"Finished combining files, {output_lines:,} lines written")
+	log.info(f"Finished combining files, {input_lines:,} lines read, {output_counts:,} field counts written")
