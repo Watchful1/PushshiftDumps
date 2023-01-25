@@ -127,7 +127,6 @@ def read_lines_zst(file_name):
 # information back to the parent via a queue
 def process_file(file, queue, field):
 	output_file = None
-	log.debug(f"Starting file: {file.input_path} : {file.file_size:,}")
 	try:
 		for line, file_bytes_processed in read_lines_zst(file.input_path):
 			try:
@@ -149,7 +148,6 @@ def process_file(file, queue, field):
 
 		file.complete = True
 		file.bytes_processed = file.file_size
-		log.debug(f"Finished file: {file.input_path} : {file.file_size:,}")
 	except Exception as err:
 		file.error_message = str(err)
 	queue.put(file)
