@@ -8,7 +8,7 @@ log = discord_logging.init_logging()
 
 if __name__ == "__main__":
 	subreddits = defaultdict(int)
-	input_file = r"\\MYCLOUDPR4100\Public\reddit\comments\RC_2021-06.zst"
+	input_file = r"\\MYCLOUDPR4100\Public\pushshift_working\RC_2022-12.zst"
 	input_file_size = os.stat(input_file).st_size
 	total_lines = 0
 	for comment, line, file_bytes_processed in utils.read_obj_zst_meta(input_file):
@@ -20,5 +20,5 @@ if __name__ == "__main__":
 	log.info(f"{total_lines:,} lines, 100%")
 
 	for subreddit, count in sorted(subreddits.items(), key=lambda item: item[1] * -1):
-		if count > 1000:
+		if count >= 1:
 			log.info(f"r/{subreddit}: {count:,}")
