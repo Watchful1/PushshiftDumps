@@ -1,0 +1,16 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Pushshift dump utils
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Watchful1
+repository-code: 'https://github.com/Watchful1/PushshiftDumps'
+abstract: >-
+  Tools to help parse reddit data from zstandard compressed
+  ndjson files from the pushshift archives
+license: MIT
