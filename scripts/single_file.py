@@ -31,7 +31,6 @@ def read_lines_zst(file_name):
 	with open(file_name, 'rb') as file_handle:
 		buffer = ''
 		reader = zstandard.ZstdDecompressor(max_window_size=2**31).stream_reader(file_handle)
-		#reader.read(40000000000)
 		while True:
 			chunk = read_and_decode(reader, 2**27, (2**29) * 2)
 
