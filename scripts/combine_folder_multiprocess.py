@@ -284,7 +284,7 @@ if __name__ == '__main__':
 	parser.add_argument("--value", help="When deciding what lines to keep, compare the field to this value. Supports a comma separated list. This is case sensitive", default="pushshift")
 	parser.add_argument("--value_list", help="A file of newline separated values to use. Overrides the value param if it is set", default=None)
 	parser.add_argument("--processes", help="Number of processes to use", default=10, type=int)
-	parser.add_argument("--file_filter", help="Regex filenames have to match to be processed", default="^RC_|RS_")
+	parser.add_argument("--file_filter", help="Regex filenames have to match to be processed", default="^RC_|^RS_")
 	parser.add_argument("--split_intermediate", help="Split the intermediate files by the first letter of the matched field, use if the filter will result in a large number of separate files", action="store_true")
 	parser.add_argument(
 		"--error_rate", help=
