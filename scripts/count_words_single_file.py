@@ -13,13 +13,27 @@ log.setLevel(logging.DEBUG)
 log.addHandler(logging.StreamHandler())
 
 
-# this function handles decompressing the zst files
+def read_and_decode(reader, chunk_size, max_window_size, previous_chunk=None, bytes_read=0):
+	chunk = reader.read(chunk_size)
+	bytes_read += chunk_size
+	if previous_chunk is not None:
+		chunk = previous_chunk + chunk
+	try:
+		return chunk.decode()
+	except UnicodeDecodeError:
+		if bytes_read > max_window_size:
+			raise UnicodeError(f"Unable to decode frame after reading {bytes_read:,} bytes")
+		log.info(f"Decoding error with {bytes_read:,} bytes, reading another chunk")
+		return read_and_decode(reader, chunk_size, max_window_size, chunk, bytes_read)
+
+
 def read_lines_zst(file_name):
 	with open(file_name, 'rb') as file_handle:
 		buffer = ''
 		reader = zstandard.ZstdDecompressor(max_window_size=2**31).stream_reader(file_handle)
 		while True:
-			chunk = reader.read(2**27).decode()
+			chunk = read_and_decode(reader, 2**27, (2**29) * 2)
+
 			if not chunk:
 				break
 			lines = (buffer + chunk).split("\n")
@@ -28,6 +42,7 @@ def read_lines_zst(file_name):
 				yield line, file_handle.tell()
 
 			buffer = lines[-1]
+
 		reader.close()
 
 
@@ -86,8 +101,7 @@ if __name__ == "__main__":
 					for phrase in phrases:
 						# check if it's the text
 						if phrase in body_lower:
-							# and then add the object's score to the dict
-							word_counts[phrase] += obj['score']
+							word_counts[phrase] += 1
 
 			# just in case there's corruption somewhere in the file
 			except (KeyError, json.JSONDecodeError) as err:
