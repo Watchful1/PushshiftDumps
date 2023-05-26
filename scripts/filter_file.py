@@ -18,6 +18,13 @@ output_file = r"\\MYCLOUDPR4100\Public\output"
 #   csv: a comma separated value file. Can be opened by a text editor or excel
 # WARNING READ THIS: if you use txt or csv output on a large input file without filtering out most of the rows, the resulting file will be extremely large. Usually about 7 times as large as the compressed input file
 output_format = "csv"
+# override the above format and output only this field into a text file, one per line. Useful if you want to make a list of authors or ids. See the examples below
+# any field that's in the dump is supported, but useful ones are
+#   author: the username of the author
+#   id: the id of the submission or comment
+#   link_id: only for comments, the fullname of the submission the comment is associated with
+#   parent_id: only for comments, the fullname of the parent of the comment. Either another comment or the submission if it's top level
+single_field = None
 # the fields in the file are different depending on whether it has comments or submissions. If we're writing a csv, we need to know which fields to write.
 # The filename from the torrent has which type it is, but you'll need to change this if you removed that from the filename
 is_submission = "submission" in input_file
@@ -43,9 +50,38 @@ to_date = datetime.strptime("2025-01-01", "%Y-%m-%d")
 # field = "selftext"
 # values = ["stonk","moon"]
 # exact_match = False
+#
+#
+# filter a submission file and then get a file with all the comments only in those submissions. This is a multi step process
+# add your submission filters and set the output file name to something unique
+# input_file = "redditdev_submissions.zst"
+# output_file = "filtered_submissions"
+# output_format = "csv"
+# field = "author"
+# values = ["watchful1"]
+#
+# run the script, this will result in a file called "filtered_submissions.csv" that contains only submissions by u/watchful1
+# now we'll run the script again with the same input and filters, but set the output to single field. Be sure to change the output file to a new name, but don't change any of the other inputs
+# output_file = "submission_ids"
+# single_field = "id"
+#
+# run the script again, this will result in a file called "submission_ids.txt" that has an id on each line
+# now we'll remove all the other filters and update the script to input from the comments file, and use the submission ids list we created before. And change the output name again so we don't override anything
+# input_file = "redditdev_comments.zst"
+# output_file = "filtered_comments"
+# single_field = None  # resetting this back so it's not used
+# field = "link_id"  # in the comment object, this is the field that contains the submission id
+# values_file = "submission_ids.txt"
+# exact_match = False  # the link_id field has a prefix on it, so we can't do an exact match
+#
+# run the script one last time and now you have a file called "filtered_comments.csv" that only has comments from your submissions above
+# if you want only top level comments instead of all comments, you can set field to "parent_id" instead of "link_id"
 
 field = "author"
 values = ["watchful1","spez"]
+# if you have a long list of values, you can put them in a file and put the filename here. If set this overrides the value list above
+# if this list is very large, it could greatly slow down the process
+values_file = None
 exact_match = True
 
 
@@ -70,6 +106,14 @@ def write_line_zst(handle, line):
 
 def write_line_json(handle, obj):
 	handle.write(json.dumps(obj))
+	handle.write("\n")
+
+
+def write_line_single(handle, obj, field):
+	if field in obj:
+		handle.write(obj[field])
+	else:
+		log.info(f"{field} not in object {obj['id']}")
 	handle.write("\n")
 
 
@@ -128,21 +172,34 @@ def read_lines_zst(file_name):
 
 
 if __name__ == "__main__":
+	if single_field is not None:
+		log.info("Single field output mode, changing output file format to txt")
+		output_format = "txt"
 	output_path = f"{output_file}.{output_format}"
 
 	writer = None
 	if output_format == "zst":
+		log.info("Output format set to zst")
 		handle = zstandard.ZstdCompressor().stream_writer(open(output_path, 'wb'))
 	elif output_format == "txt":
+		log.info("Output format set to txt")
 		handle = open(output_path, 'w', encoding='UTF-8')
 	elif output_format == "csv":
+		log.info("Output format set to csv")
 		handle = open(output_path, 'w', encoding='UTF-8', newline='')
 		writer = csv.writer(handle)
 	else:
 		log.error(f"Unsupported output format {output_format}")
 		sys.exit()
 
-	values = [value.lower() for value in values]  # convert to lowercase
+	if values_file is not None:
+		values = []
+		with open(values_file, 'r') as values_handle:
+			for value in values_handle:
+				values.append(value.strip().lower())
+		log.info(f"Loaded {len(values)} from values file")
+	else:
+		values = [value.lower() for value in values]  # convert to lowercase
 
 	file_size = os.stat(input_file).st_size
 	file_bytes_processed = 0
@@ -184,7 +241,10 @@ if __name__ == "__main__":
 			elif output_format == "csv":
 				write_line_csv(writer, obj, is_submission)
 			elif output_format == "txt":
-				write_line_json(handle, obj)
+				if single_field is not None:
+					write_line_single(handle, obj, single_field)
+				else:
+					write_line_json(handle, obj)
 		except (KeyError, json.JSONDecodeError) as err:
 			bad_lines += 1
 
