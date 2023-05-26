@@ -1,5 +1,3 @@
-# this is an example
-
 import zstandard
 import os
 import json
