@@ -7,7 +7,7 @@ from datetime import datetime
 import logging.handlers
 
 # put the path to the input file
-input_file = r"\\MYCLOUDPR4100\Public\reddit\subreddits\redditdev_comments.zst"
+input_file = r"\\MYCLOUDPR4100\Public\reddit\submissions\RS_2023-02.zst"
 # put the name or path to the output file. The file extension from below will be added automatically
 output_file = r"\\MYCLOUDPR4100\Public\output"
 # the format to output in, pick from the following options
@@ -75,8 +75,8 @@ to_date = datetime.strptime("2025-01-01", "%Y-%m-%d")
 # run the script one last time and now you have a file called "filtered_comments.csv" that only has comments from your submissions above
 # if you want only top level comments instead of all comments, you can set field to "parent_id" instead of "link_id"
 
-field = "author"
-values = ["watchful1","spez"]
+field = "subreddit"
+values = ['vim','google']
 # if you have a long list of values, you can put them in a file and put the filename here. If set this overrides the value list above
 # if this list is very large, it could greatly slow down the process
 values_file = None
@@ -189,15 +189,27 @@ if __name__ == "__main__":
 	else:
 		log.error(f"Unsupported output format {output_format}")
 		sys.exit()
+	log.info(f"Input file is: {input_file}")
+	log.info(f"Output file is: {output_path}")
 
 	if values_file is not None:
 		values = []
 		with open(values_file, 'r') as values_handle:
 			for value in values_handle:
 				values.append(value.strip().lower())
-		log.info(f"Loaded {len(values)} from values file")
+		log.info(f"Loaded {len(values)} from values file {values_file}")
 	else:
 		values = [value.lower() for value in values]  # convert to lowercase
+
+	log.info(f"Filtering field: {field}")
+	if len(values) <= 20:
+		log.info(f"On values: {','.join(values)}")
+	else:
+		log.info(f"On values:")
+		for value in values:
+			log.info(value)
+	log.info(f"Exact match {('on' if exact_match else 'off')}. Single field {single_field}. Is submission {is_submission}")
+	log.info(f"From date {from_date.strftime('%Y-%m-%d')} to date {to_date.strftime('%Y-%m-%d')}")
 
 	file_size = os.stat(input_file).st_size
 	file_bytes_processed = 0
@@ -243,6 +255,8 @@ if __name__ == "__main__":
 					write_line_single(handle, obj, single_field)
 				else:
 					write_line_json(handle, obj)
+			else:
+				log.info(f"Something went wrong, invalid output format {output_format}")
 		except (KeyError, json.JSONDecodeError) as err:
 			bad_lines += 1
 
