@@ -26,6 +26,8 @@ single_field = None
 # the fields in the file are different depending on whether it has comments or submissions. If we're writing a csv, we need to know which fields to write.
 # The filename from the torrent has which type it is, but you'll need to change this if you removed that from the filename
 is_submission = "submission" in input_file
+# set this to true to write out to the log every time there's a bad line, set to false if you're expecting only some of the lines to match the key
+write_bad_lines = True
 
 # only output items between these two dates
 from_date = datetime.strptime("2005-01-01", "%Y-%m-%d")
@@ -259,6 +261,13 @@ if __name__ == "__main__":
 				log.info(f"Something went wrong, invalid output format {output_format}")
 		except (KeyError, json.JSONDecodeError) as err:
 			bad_lines += 1
+			if write_bad_lines:
+				if isinstance(err, KeyError):
+					log.warning(f"Key {field} is not in the object: {err}")
+				elif isinstance(err, json.JSONDecodeError):
+					log.warning(f"Line decoding failed: {err}")
+				log.warning(line)
+
 
 	handle.close()
 	log.info(f"Complete : {total_lines:,} : {matched_lines:,} : {bad_lines:,}")
