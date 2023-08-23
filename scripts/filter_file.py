@@ -7,7 +7,7 @@ from datetime import datetime
 import logging.handlers
 
 # put the path to the input file
-input_file = r"\\MYCLOUDPR4100\Public\reddit\subreddits\redditdev_submissions.zst"
+input_file = r"\\MYCLOUDPR4100\Public\reddit\subreddits\formula1_submissions.zst"
 # put the name or path to the output file. The file extension from below will be added automatically
 output_file = r"\\MYCLOUDPR4100\Public\output"
 # the format to output in, pick from the following options
@@ -77,12 +77,12 @@ to_date = datetime.strptime("2025-01-01", "%Y-%m-%d")
 # run the script one last time and now you have a file called "filtered_comments.csv" that only has comments from your submissions above
 # if you want only top level comments instead of all comments, you can set field to "parent_id" instead of "link_id"
 
-field = "subreddit"
-values = ['vim','google']
+field = "title"
+values = ['post race discussion']
 # if you have a long list of values, you can put them in a file and put the filename here. If set this overrides the value list above
 # if this list is very large, it could greatly slow down the process
 values_file = None
-exact_match = True
+exact_match = False
 
 
 # sets up logging to the console as well as a file
@@ -120,7 +120,7 @@ def write_line_single(handle, obj, field):
 def write_line_csv(writer, obj, is_submission):
 	output_list = []
 	output_list.append(str(obj['score']))
-	output_list.append(datetime.fromtimestamp(obj['created_utc']).strftime("%Y-%m-%d"))
+	output_list.append(datetime.fromtimestamp(int(obj['created_utc'])).strftime("%Y-%m-%d"))
 	if is_submission:
 		output_list.append(obj['title'])
 	output_list.append(f"u/{obj['author']}")
