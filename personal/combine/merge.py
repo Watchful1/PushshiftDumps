@@ -189,7 +189,7 @@ field_actions = {
 		"is_robot_indexable": FieldAction.OVERWRITE,
 		"is_self": FieldAction.DONT_OVERWRITE,
 		"is_survey_ad": FieldAction.ALLOW_EMPTY,
-		"is_video": FieldAction.ALLOW,
+		"is_video": FieldAction.OVERWRITE,
 		"likes": FieldAction.ALLOW_EMPTY,
 		"link_flair_background_color": FieldAction.OVERWRITE_NOT_NONE,
 		"link_flair_css_class": FieldAction.OVERWRITE_NOT_NONE,

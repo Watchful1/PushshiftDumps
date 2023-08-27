@@ -11,6 +11,8 @@ import json
 import praw
 from praw import endpoints
 
+sys.path.append('personal')
+
 log = discord_logging.init_logging(debug=False)
 
 import utils
@@ -31,7 +33,7 @@ def query_pushshift(ids, bearer, object_type):
 	for i in range(4):
 		response = requests.get(url, headers={
 			'User-Agent': "In script by /u/Watchful1",
-			'Authorization': f"Bearer {bearer}"})
+			'Authorization': f"Bearer {bearer}"}, timeout=15)
 		if response.status_code == 200:
 			break
 		if response.status_code == 403:
@@ -166,16 +168,11 @@ if __name__ == "__main__":
 		log.error(f"Invalid type: {args.type}")
 		sys.exit(2)
 
-	config = discord_logging.get_config()
 	user_name = "Watchful12"
-	reddit = praw.Reddit(
-		username=user_name,
-		password=discord_logging.get_config_var(config, user_name, "password"),
-		client_id=discord_logging.get_config_var(config, user_name, f"client_id_1"),
-		client_secret=discord_logging.get_config_var(config, user_name, f"client_secret_1"),
-		user_agent=f"Remindme ingest script")
+	reddit = praw.Reddit(user_name)
 
-	pushshift_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoiV2F0Y2hmdWwxIiwiZXhwaXJlcyI6MTY5MzA5OTE4OC4wMjU3MDU4fQ.HJJd73nwHArOz2lErpubUuTVd_gdJ44SfpKDjb91tIY"
+	config = discord_logging.get_config()
+	pushshift_token = discord_logging.get_config_var(config, user_name, "pushshift_token")
 
 	while start_date <= end_date:
 		build_day(start_date, input_folders, args.output, object_type, reddit, pushshift_token)

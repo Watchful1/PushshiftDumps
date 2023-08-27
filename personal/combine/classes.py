@@ -11,6 +11,7 @@ from collections import defaultdict
 log = discord_logging.get_logger()
 
 import utils
+import merge
 
 NEWLINE_ENCODED = "\n".encode('utf-8')
 
@@ -258,12 +259,12 @@ class ObjectDict:
 		created_minute = created_utc.replace(second=0, microsecond=0)
 		if obj['id'] in self.by_id:
 			existing_obj = self.by_id[obj['id']]
-			unmatched_field = utils.merge_fields(existing_obj, obj, self.obj_type)
+			unmatched_field = merge.merge_fields(existing_obj, obj, self.obj_type)
 			self.counts[created_minute][ingest_type][False] += 1
 			return unmatched_field
 		if created_utc < self.min_datetime or created_utc > self.max_datetime:
 			return False
-		unmatched_field = utils.parse_fields(obj, self.obj_type)
+		unmatched_field = merge.parse_fields(obj, self.obj_type)
 		self.by_id[obj['id']] = obj
 		self.by_minute[created_minute].add(obj)
 		self.counts[created_minute][ingest_type][True] += 1
