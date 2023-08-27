@@ -156,7 +156,7 @@ field_actions = {
 		"created_utc": FieldAction.OVERWRITE_IF_NONE,
 		"crosspost_parent": FieldAction.ALLOW,
 		"crosspost_parent_list": FieldAction.OVERWRITE_NOT_NONE,
-		"discussion_type": FieldAction.ALLOW,
+		"discussion_type": FieldAction.OVERWRITE_NOT_NONE,
 		"distinguished": FieldAction.OVERWRITE,
 		"domain": FieldAction.OVERWRITE_NOT_NONE,
 		"domain_override": FieldAction.OVERWRITE_NOT_NONE,
