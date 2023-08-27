@@ -1,85 +1,10 @@
 import re
 import sys
 from enum import Enum
-import discord_logging
-import zstandard
-import json
 from datetime import datetime
-import requests
-import time
+import discord_logging
 
-import counters
-
-log = discord_logging.get_logger(init=True)
-
-
-def parse_ingest_string(ingest_string):
-	ingest_ids = []
-	for char in ingest_string:
-		ingest_ids.append(char)
-	return ingest_ids
-
-
-def read_obj_zst(file_name):
-	with open(file_name, 'rb') as file_handle:
-		buffer = ''
-		reader = zstandard.ZstdDecompressor(max_window_size=2**31).stream_reader(file_handle)
-		while True:
-			chunk = read_and_decode(reader, 2**27, (2**29) * 2)
-
-			if not chunk:
-				break
-			lines = (buffer + chunk).split("\n")
-
-			for line in lines[:-1]:
-				if line == "":
-					continue
-				yield json.loads(line.strip())
-
-			buffer = lines[-1]
-
-		reader.close()
-
-
-def read_and_decode(reader, chunk_size, max_window_size, previous_chunk=None, bytes_read=0):
-	chunk = reader.read(chunk_size)
-	bytes_read += chunk_size
-	if previous_chunk is not None:
-		chunk = previous_chunk + chunk
-	try:
-		return chunk.decode()
-	except UnicodeDecodeError:
-		if bytes_read > max_window_size:
-			raise UnicodeError(f"Unable to decode frame after reading {bytes_read:,} bytes")
-		return read_and_decode(reader, chunk_size, max_window_size, chunk, bytes_read)
-
-
-def base36encode(integer: int) -> str:
-	chars = '0123456789abcdefghijklmnopqrstuvwxyz'
-	sign = '-' if integer < 0 else ''
-	integer = abs(integer)
-	result = ''
-	while integer > 0:
-		integer, remainder = divmod(integer, 36)
-		result = chars[remainder] + result
-	return sign + result
-
-
-def base36decode(base36: str) -> int:
-	return int(base36, 36)
-
-
-def next_string_id(string_id):
-	return base36encode(base36decode(string_id) + 1)
-
-
-def get_next_hundred_ids(start_id):
-	start_num = base36decode(start_id)
-	ids = []
-	id_num = -1
-	for id_num in range(start_num, start_num + 100):
-		ids.append(base36encode(id_num))
-	return ids, base36encode(id_num)
+log = discord_logging.get_logger()
 
 
 class FieldAction(Enum):
@@ -496,54 +421,3 @@ def parse_fields(new_obj, obj_type):
 		new_obj['retrieved_on'] = int(datetime.utcnow().timestamp())
 
 	return unmatched_field
-
-
-def merge_lowest_highest_id(str_id, lowest_id, highest_id):
-	int_id = base36decode(str_id)
-	if lowest_id is None or int_id < lowest_id:
-		lowest_id = int_id
-	if highest_id is None or int_id > highest_id:
-		highest_id = int_id
-	return lowest_id, highest_id
-
-
-async def record_rate_limits(reddit, client):
-	reddit_user = await reddit.user.me()
-	remaining = int(reddit._core._rate_limiter.remaining)
-	used = int(reddit._core._rate_limiter.used)
-	counters.rate_requests_remaining.labels(username=reddit_user.name, client=client).set(remaining)
-	counters.rate_requests_used.labels(username=reddit_user.name, client=client).set(used)
-
-	reset_timestamp = reddit._core._rate_limiter.reset_timestamp
-	seconds_to_reset = (datetime.utcfromtimestamp(reset_timestamp) - datetime.utcnow()).total_seconds()
-	counters.rate_seconds_remaining.labels(username=reddit_user.name, client=client).set(int(seconds_to_reset))
-	window_size = int(reddit._core._rate_limiter.window_size) if reddit._core._rate_limiter.window_size is not None else reddit._core._rate_limiter.window_size
-	time_to_next_request = max((datetime.utcnow() - datetime.utcfromtimestamp(reddit._core._rate_limiter.next_request_timestamp)).total_seconds(), 0)
-	#log.info(f"Rate: u/{reddit_user.name}: {window_size} : {remaining} : {used} : {seconds_to_reset:.2f} : {time_to_next_request:.3f} ")
-
-	return
-
-
-def chunk_list(items, chunk_size):
-	for i in range(0, len(items), chunk_size):
-		yield items[i:i + chunk_size]
-
-
-def query_pushshift(ids, bearer, object_type):
-	object_name = "comment" if object_type == ObjectType.COMMENT else "submission"
-	url = f"https://api.pushshift.io/reddit/{object_name}/search?limit=1000&ids={','.join(ids)}"
-	log.debug(f"pushshift query: {url}")
-	response = None
-	for i in range(4):
-		response = requests.get(url, headers={
-			'User-Agent': "In script by /u/Watchful1",
-			'Authorization': f"Bearer {bearer}"})
-		if response.status_code == 200:
-			break
-		if response.status_code == 403:
-			log.warning(f"Pushshift unauthorized, aborting")
-			sys.exit(2)
-		time.sleep(2)
-	if response.status_code != 200:
-		log.warning(f"4 requests failed with status code {response.status_code}")
-	return response.json()['data']

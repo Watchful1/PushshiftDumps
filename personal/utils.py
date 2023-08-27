@@ -7,13 +7,14 @@ def read_obj_zst(file_name):
 		buffer = ''
 		reader = zstandard.ZstdDecompressor(max_window_size=2**31).stream_reader(file_handle)
 		while True:
-			chunk = reader.read(2**27).decode()
+			chunk = read_and_decode(reader, 2**27, (2**29) * 2)
 			if not chunk:
 				break
 			lines = (buffer + chunk).split("\n")
-
 			for line in lines[:-1]:
-				yield json.loads(line)
+				if line == "":
+					continue
+				yield json.loads(line.strip())
 
 			buffer = lines[-1]
 		reader.close()
@@ -71,3 +72,32 @@ class OutputZst:
 	def __exit__(self, exc_type, exc_value, exc_traceback):
 		self.close()
 		return True
+
+
+def base36encode(integer: int) -> str:
+	chars = '0123456789abcdefghijklmnopqrstuvwxyz'
+	sign = '-' if integer < 0 else ''
+	integer = abs(integer)
+	result = ''
+	while integer > 0:
+		integer, remainder = divmod(integer, 36)
+		result = chars[remainder] + result
+	return sign + result
+
+
+def base36decode(base36: str) -> int:
+	return int(base36, 36)
+
+
+def merge_lowest_highest_id(str_id, lowest_id, highest_id):
+	int_id = base36decode(str_id)
+	if lowest_id is None or int_id < lowest_id:
+		lowest_id = int_id
+	if highest_id is None or int_id > highest_id:
+		highest_id = int_id
+	return lowest_id, highest_id
+
+
+def chunk_list(items, chunk_size):
+	for i in range(0, len(items), chunk_size):
+		yield items[i:i + chunk_size]

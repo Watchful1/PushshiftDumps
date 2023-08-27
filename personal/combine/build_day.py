@@ -1,12 +1,12 @@
 import sys
-
+import requests
+import time
 import discord_logging
 import argparse
 import os
 import re
 import zstandard
 from datetime import datetime, timedelta
-from collections import defaultdict
 import json
 import praw
 from praw import endpoints
@@ -16,13 +16,35 @@ log = discord_logging.init_logging(debug=False)
 import utils
 import classes
 from classes import IngestType
+from merge import ObjectType
+
 
 NEWLINE_ENCODED = "\n".encode('utf-8')
 reg = re.compile(r"\d\d-\d\d-\d\d_\d\d-\d\d")
 
 
+def query_pushshift(ids, bearer, object_type):
+	object_name = "comment" if object_type == ObjectType.COMMENT else "submission"
+	url = f"https://api.pushshift.io/reddit/{object_name}/search?limit=1000&ids={','.join(ids)}"
+	log.debug(f"pushshift query: {url}")
+	response = None
+	for i in range(4):
+		response = requests.get(url, headers={
+			'User-Agent': "In script by /u/Watchful1",
+			'Authorization': f"Bearer {bearer}"})
+		if response.status_code == 200:
+			break
+		if response.status_code == 403:
+			log.warning(f"Pushshift unauthorized, aborting")
+			sys.exit(2)
+		time.sleep(2)
+	if response.status_code != 200:
+		log.warning(f"4 requests failed with status code {response.status_code}")
+	return response.json()['data']
+
+
 def build_day(day_to_process, input_folders, output_folder, object_type, reddit, pushshift_token):
-	file_type = "comments" if object_type == utils.ObjectType.COMMENT else "submissions"
+	file_type = "comments" if object_type == ObjectType.COMMENT else "submissions"
 
 	file_minutes = {}
 	minute_iterator = day_to_process - timedelta(minutes=2)
@@ -72,7 +94,7 @@ def build_day(day_to_process, input_folders, output_folder, object_type, reddit,
 				f"{working_highest_minute.strftime('%y-%m-%d_%H-%M')} with {len(missing_ids)} ids")
 
 			for chunk in utils.chunk_list(missing_ids, 50):
-				pushshift_objects = utils.query_pushshift(chunk, pushshift_token, object_type)
+				pushshift_objects = query_pushshift(chunk, pushshift_token, object_type)
 				for pushshift_object in pushshift_objects:
 					if objects.add_object(pushshift_object, IngestType.PUSHSHIFT):
 						unmatched_field = True
@@ -137,9 +159,9 @@ if __name__ == "__main__":
 
 	object_type = None
 	if args.type == "comments":
-		object_type = utils.ObjectType.COMMENT
+		object_type = ObjectType.COMMENT
 	elif args.type == "submissions":
-		object_type = utils.ObjectType.SUBMISSION
+		object_type = ObjectType.SUBMISSION
 	else:
 		log.error(f"Invalid type: {args.type}")
 		sys.exit(2)
@@ -160,6 +182,3 @@ if __name__ == "__main__":
 		start_date = start_date + timedelta(days=1)
 
 	#log.info(f"{len(file_minutes)} : {count_ingest_minutes} : {count_rescan_minutes} : {day_highest_id - day_lowest_id:,} - {count_objects:,} = {(day_highest_id - day_lowest_id) - count_objects:,}: {utils.base36encode(day_lowest_id)}-{utils.base36encode(day_highest_id)}")
-
-# minute_iterator = datetime.strptime("23-07-10 23:30", '%y-%m-%d %H:%M')
-# working_lowest_minute = datetime.strptime("23-07-10 23:30", '%y-%m-%d %H:%M')
