@@ -139,6 +139,7 @@ if __name__ == "__main__":
 	parser.add_argument("--end_date", help="The end of the date range to process, format YY-MM-DD. If not provided, the script processed only one day")
 	parser.add_argument('--input', help='Input folder', required=True)
 	parser.add_argument('--output', help='Output folder', required=True)
+	parser.add_argument('--pushshift', help='The pushshift token', required=True)
 	args = parser.parse_args()
 
 	input_folders = [
@@ -171,11 +172,8 @@ if __name__ == "__main__":
 	user_name = "Watchful12"
 	reddit = praw.Reddit(user_name)
 
-	config = discord_logging.get_config()
-	pushshift_token = discord_logging.get_config_var(config, user_name, "pushshift_token")
-
 	while start_date <= end_date:
-		build_day(start_date, input_folders, args.output, object_type, reddit, pushshift_token)
+		build_day(start_date, input_folders, args.output, object_type, reddit, args.pushshift)
 		start_date = start_date + timedelta(days=1)
 
 	#log.info(f"{len(file_minutes)} : {count_ingest_minutes} : {count_rescan_minutes} : {day_highest_id - day_lowest_id:,} - {count_objects:,} = {(day_highest_id - day_lowest_id) - count_objects:,}: {utils.base36encode(day_lowest_id)}-{utils.base36encode(day_highest_id)}")
