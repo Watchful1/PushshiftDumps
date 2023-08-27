@@ -9,6 +9,8 @@ discord-logging = {editable = true, git = "https://github.com/Watchful1/DiscordL
 requests = "*"
 pymongo = {extras = ["srv"], version = "*"}
 scipy = "*"
+sortedcontainers = "*"
+praw = "*"
 
 [dev-packages]
 
