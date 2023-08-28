@@ -114,7 +114,7 @@ field_actions = {
 		"utc_datetime_str": FieldAction.DELETE,
 	},
 	ObjectType.SUBMISSION: {
-		"ad_promoted_user_posts": FieldAction.ALLOW_EMPTY,
+		"ad_promoted_user_posts": FieldAction.OVERWRITE_NOT_NONE,
 		"ad_supplementary_text_md": FieldAction.ALLOW,
 		"adserver_click_url": FieldAction.ALLOW_EMPTY,
 		"adserver_imp_pixel": FieldAction.ALLOW_EMPTY,
