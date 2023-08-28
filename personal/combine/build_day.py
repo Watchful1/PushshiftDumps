@@ -140,7 +140,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description="Combine the ingest and rescan files, clean and do pushshift lookups as needed")
 	parser.add_argument("--type", help="The object type, either comments or submissions", required=True)
 	parser.add_argument("--start_date", help="The start of the date range to process, format YY-MM-DD_HH-MM", required=True)
-	parser.add_argument("--end_date", help="The end of the date range to process, format YY-MM-DD_HH-MM. If not provided, the script processes to the end of the day")
+	parser.add_argument("--end_date", help="The end of the date range to process, format YY-MM-DD. If not provided, the script processes to the end of the day")
 	parser.add_argument('--input', help='Input folder', required=True)
 	parser.add_argument('--output', help='Output folder', required=True)
 	parser.add_argument('--pushshift', help='The pushshift token', required=True)
@@ -158,7 +158,7 @@ if __name__ == "__main__":
 	start_date = datetime.strptime(args.start_date, '%y-%m-%d_%H-%M')
 	end_date = end_of_day(start_date)
 	if args.end_date is not None:
-		end_date = datetime.strptime(args.end_date, '%y-%m-%d_%H-%M')
+		end_date = datetime.strptime(args.end_date, '%y-%m-%d')
 
 	for input_folder, ingest_type in input_folders:
 		log.info(f"Input folder: {input_folder}")
