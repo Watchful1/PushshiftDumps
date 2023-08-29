@@ -31,9 +31,13 @@ def query_pushshift(ids, bearer, object_type):
 	log.debug(f"pushshift query: {url}")
 	response = None
 	for i in range(4):
-		response = requests.get(url, headers={
-			'User-Agent': "In script by /u/Watchful1",
-			'Authorization': f"Bearer {bearer}"}, timeout=15)
+		try:
+			response = requests.get(url, headers={
+				'User-Agent': "In script by /u/Watchful1",
+				'Authorization': f"Bearer {bearer}"}, timeout=15)
+		except ConnectionError:
+			time.sleep(2)
+			continue
 		if response.status_code == 200:
 			break
 		if response.status_code == 403:
