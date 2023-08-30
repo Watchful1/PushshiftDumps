@@ -35,7 +35,7 @@ def query_pushshift(ids, bearer, object_type):
 			response = requests.get(url, headers={
 				'User-Agent': "In script by /u/Watchful1",
 				'Authorization': f"Bearer {bearer}"}, timeout=15)
-		except ConnectionError:
+		except (ConnectionError, requests.exceptions.ReadTimeout):
 			time.sleep(2)
 			continue
 		if response.status_code == 200:
