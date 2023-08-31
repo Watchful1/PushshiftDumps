@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 import json
 import praw
 from praw import endpoints
+import prawcore
 
 sys.path.append('personal')
 
@@ -47,6 +48,21 @@ def query_pushshift(ids, bearer, object_type):
 	if response.status_code != 200:
 		log.warning(f"4 requests failed with status code {response.status_code}")
 	return response.json()['data']
+
+
+def query_reddit(ids, reddit, object_type):
+	id_prefix = 't1_' if object_type == ObjectType.COMMENT else 't3_'
+	id_string = f"{id_prefix}{(f',{id_prefix}'.join(ids))}"
+	response = None
+	for i in range(4):
+		try:
+			response = reddit.request(method="GET", path=endpoints.API_PATH["info"], params={"id": id_string})
+			break
+		except prawcore.exceptions.ServerError:
+			time.sleep(2)
+	if response.status_code != 200:
+		log.warning(f"4 requests failed with status code {response.status_code}")
+	return response['data']['children']
 
 
 def end_of_day(input_minute):
@@ -103,11 +119,9 @@ def build_day(day_to_process, input_folders, output_folder, object_type, reddit,
 					if objects.add_object(pushshift_object, IngestType.PUSHSHIFT):
 						unmatched_field = True
 
-			id_prefix = 't1_' if file_type == 'comments' else 't3_'
 			for chunk in utils.chunk_list(missing_ids, 100):
-				id_string = f"{id_prefix}{(f',{id_prefix}'.join(chunk))}"
-				reddit_objects = reddit.request(method="GET", path=endpoints.API_PATH["info"], params={"id": id_string})
-				for reddit_object in reddit_objects['data']['children']:
+				reddit_objects = query_reddit(chunk, reddit, object_type)
+				for reddit_object in reddit_objects:
 					if objects.add_object(reddit_object['data'], IngestType.BACKFILL):
 						unmatched_field = True
 
