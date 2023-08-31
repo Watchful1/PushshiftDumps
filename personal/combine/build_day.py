@@ -60,8 +60,6 @@ def query_reddit(ids, reddit, object_type):
 			break
 		except prawcore.exceptions.ServerError:
 			time.sleep(2)
-	if response.status_code != 200:
-		log.warning(f"4 requests failed with status code {response.status_code}")
 	return response['data']['children']
 
 
