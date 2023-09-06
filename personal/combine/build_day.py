@@ -26,6 +26,14 @@ NEWLINE_ENCODED = "\n".encode('utf-8')
 reg = re.compile(r"\d\d-\d\d-\d\d_\d\d-\d\d")
 
 
+def re_auth_pushshift(old_token):
+	response = requests.post(f"https://auth.pushshift.io/refresh?access_token={old_token}")
+	result = response.json()
+	new_token = result['access_token']
+	log.warning(f"New pushshift token: {new_token}")
+	return new_token
+
+
 def query_pushshift(ids, bearer, object_type):
 	object_name = "comment" if object_type == ObjectType.COMMENT else "submission"
 	url = f"https://api.pushshift.io/reddit/{object_name}/search?limit=1000&ids={','.join(ids)}"
@@ -42,12 +50,12 @@ def query_pushshift(ids, bearer, object_type):
 		if response.status_code == 200:
 			break
 		if response.status_code == 403:
-			log.warning(f"Pushshift unauthorized, aborting")
-			sys.exit(2)
+			log.warning(f"Pushshift unauthorized, trying reauth")
+			bearer = re_auth_pushshift(bearer)
 		time.sleep(2)
 	if response.status_code != 200:
 		log.warning(f"4 requests failed with status code {response.status_code}")
-	return response.json()['data']
+	return response.json()['data'], bearer
 
 
 def query_reddit(ids, reddit, object_type):
@@ -112,7 +120,7 @@ def build_day(day_to_process, input_folders, output_folder, object_type, reddit,
 				f"{working_highest_minute.strftime('%y-%m-%d_%H-%M')} with {len(missing_ids)} ids")
 
 			for chunk in utils.chunk_list(missing_ids, 50):
-				pushshift_objects = query_pushshift(chunk, pushshift_token, object_type)
+				pushshift_objects, pushshift_token = query_pushshift(chunk, pushshift_token, object_type)
 				for pushshift_object in pushshift_objects:
 					if objects.add_object(pushshift_object, IngestType.PUSHSHIFT):
 						unmatched_field = True
