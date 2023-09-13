@@ -205,7 +205,7 @@ field_actions = {
 		"media_embed": FieldAction.OVERWRITE_NOT_NONE,
 		"media_metadata": FieldAction.OVERWRITE_NOT_NONE,
 		"media_only": FieldAction.OVERWRITE,
-		"mobile_ad_url": FieldAction.ALLOW,
+		"mobile_ad_url": FieldAction.OVERWRITE_NOT_NONE,
 		"mod_note": FieldAction.ALLOW_EMPTY,
 		"mod_reason_by": FieldAction.ALLOW_EMPTY,
 		"mod_reason_title": FieldAction.ALLOW_EMPTY,
