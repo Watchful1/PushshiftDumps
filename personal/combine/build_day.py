@@ -29,6 +29,7 @@ reg = re.compile(r"\d\d-\d\d-\d\d_\d\d-\d\d")
 def re_auth_pushshift(old_token):
 	response = requests.post(f"https://auth.pushshift.io/refresh?access_token={old_token}")
 	result = response.json()
+	log.warning(f"Reauth responce: {str(result)}")
 	new_token = result['access_token']
 	log.warning(f"New pushshift token: {new_token}")
 	return new_token
