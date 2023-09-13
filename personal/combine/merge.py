@@ -155,7 +155,7 @@ field_actions = {
 		"contest_mode": FieldAction.OVERWRITE,
 		"created": FieldAction.OVERWRITE_IF_NONE,
 		"created_utc": FieldAction.OVERWRITE_IF_NONE,
-		"crosspost_parent": FieldAction.ALLOW,
+		"crosspost_parent": FieldAction.OVERWRITE_NOT_NONE,
 		"crosspost_parent_list": FieldAction.OVERWRITE_NOT_NONE,
 		"discussion_type": FieldAction.OVERWRITE_NOT_NONE,
 		"distinguished": FieldAction.OVERWRITE,
