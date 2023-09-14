@@ -11,6 +11,7 @@ import json
 import praw
 from praw import endpoints
 import prawcore
+import logging.handlers
 
 sys.path.append('personal')
 
@@ -26,12 +27,25 @@ NEWLINE_ENCODED = "\n".encode('utf-8')
 reg = re.compile(r"\d\d-\d\d-\d\d_\d\d-\d\d")
 
 
+def save_pushshift_token(token):
+	with open("pushshift.txt", 'w') as file:
+		file.write(token)
+
+
+def load_pushshift_token():
+	with open("pushshift.txt", 'r') as file:
+		token = file.read().strip()
+	return token
+
+
 def re_auth_pushshift(old_token):
 	response = requests.post(f"https://auth.pushshift.io/refresh?access_token={old_token}")
 	result = response.json()
 	log.warning(f"Reauth responce: {str(result)}")
 	new_token = result['access_token']
 	log.warning(f"New pushshift token: {new_token}")
+	save_pushshift_token(new_token)
+	discord_logging.flush_discord()
 	return new_token
 
 
@@ -47,6 +61,8 @@ def query_pushshift(ids, bearer, object_type):
 				'Authorization': f"Bearer {bearer}"}, timeout=15)
 		except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
 			time.sleep(2)
+			continue
+		if response is None:
 			continue
 		if response.status_code == 200:
 			break
@@ -76,7 +92,9 @@ def end_of_day(input_minute):
 	return input_minute.replace(hour=0, minute=0, second=0) + timedelta(days=1)
 
 
-def build_day(day_to_process, input_folders, output_folder, object_type, reddit, pushshift_token):
+def build_day(day_to_process, input_folders, output_folder, object_type, reddit):
+	pushshift_token = load_pushshift_token()
+
 	file_type = "comments" if object_type == ObjectType.COMMENT else "submissions"
 
 	file_minutes = {}
@@ -152,6 +170,7 @@ def build_day(day_to_process, input_folders, output_folder, object_type, reddit,
 
 			objects.rebuild_minute_dict()
 
+		discord_logging.flush_discord()
 		if unmatched_field:
 			log.info(f"Unmatched field, aborting")
 			sys.exit(1)
@@ -168,7 +187,7 @@ if __name__ == "__main__":
 	parser.add_argument("--end_date", help="The end of the date range to process, format YY-MM-DD. If not provided, the script processes to the end of the day")
 	parser.add_argument('--input', help='Input folder', required=True)
 	parser.add_argument('--output', help='Output folder', required=True)
-	parser.add_argument('--pushshift', help='The pushshift token', required=True)
+	parser.add_argument('--pushshift', help='The pushshift token')
 	args = parser.parse_args()
 
 	input_folders = [
@@ -201,8 +220,15 @@ if __name__ == "__main__":
 	user_name = "Watchful12"
 	reddit = praw.Reddit(user_name)
 
-	while start_date <= end_date:
-		build_day(start_date, input_folders, args.output, object_type, reddit, args.pushshift)
-		start_date = end_of_day(start_date)
+	discord_logging.init_discord_logging(
+		section_name=None,
+		log_level=logging.WARNING,
+		logging_webhook=reddit.config.custom["logging_webhook"]
+	)
 
-	#log.info(f"{len(file_minutes)} : {count_ingest_minutes} : {count_rescan_minutes} : {day_highest_id - day_lowest_id:,} - {count_objects:,} = {(day_highest_id - day_lowest_id) - count_objects:,}: {utils.base36encode(day_lowest_id)}-{utils.base36encode(day_highest_id)}")
+	if args.pushshift is not None:
+		save_pushshift_token(args.pushshift)
+
+	while start_date <= end_date:
+		build_day(start_date, input_folders, args.output, object_type, reddit)
+		start_date = end_of_day(start_date)

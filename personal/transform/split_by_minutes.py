@@ -12,10 +12,11 @@ NEWLINE_ENCODED = "\n".encode('utf-8')
 
 
 if __name__ == "__main__":
-	input_file = r"\\MYCLOUDPR4100\Public\RS_2023-04.zst"
-	output_folder = r"\\MYCLOUDPR4100\Public\ingest\download2"
+	input_file = r"\\MYCLOUDPR4100\Public\RS_2023-05.zst"
+	output_folder = r"\\MYCLOUDPR4100\Public\ingest\download"
 	file_type = "comments" if "RC" in input_file else "submissions"
 
+	log.info(f"Input: {input_file} - Output: {output_folder}")
 	previous_minute, output_handle, created_utc = None, None, None
 	count_objects, count_minute = 0, 0
 	for obj in utils.read_obj_zst(input_file):
