@@ -210,6 +210,7 @@ field_actions = {
 		"mod_reason_by": FieldAction.ALLOW_EMPTY,
 		"mod_reason_title": FieldAction.ALLOW_EMPTY,
 		"mod_reports": FieldAction.SPECIAL_NO_OVERWRITE,
+		"mod_reports_dismissed": FieldAction.SPECIAL_NO_OVERWRITE,
 		"name": FieldAction.OVERWRITE_IF_NONE,
 		"no_follow": FieldAction.OVERWRITE,
 		"num_comments": FieldAction.OVERWRITE_NOT_NONE,
