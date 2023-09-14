@@ -220,6 +220,8 @@ if __name__ == "__main__":
 	user_name = "Watchful12"
 	reddit = praw.Reddit(user_name)
 
+	log.info(f"{reddit.config.custom}")
+
 	discord_logging.init_discord_logging(
 		section_name=None,
 		log_level=logging.WARNING,
