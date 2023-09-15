@@ -239,7 +239,7 @@ class ObjectDict:
 		if minute_dict is None:
 			range_string = ""
 		else:
-			range_string = f" - {len(minute_dict.obj_list)} ({minute_dict.max_id - minute_dict.min_id}) ({utils.base36encode(minute_dict.min_id)}-{utils.base36encode(minute_dict.max_id)})"
+			range_string = f" - {len(minute_dict.obj_list)}({minute_dict.max_id - minute_dict.min_id}) ({utils.base36encode(minute_dict.min_id)}-{utils.base36encode(minute_dict.max_id)})"
 		return count_string + range_string
 
 	def get_counts_string(self):

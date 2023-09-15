@@ -116,7 +116,7 @@ field_actions = {
 	},
 	ObjectType.SUBMISSION: {
 		"ad_promoted_user_posts": FieldAction.OVERWRITE_NOT_NONE,
-		"ad_supplementary_text_md": FieldAction.ALLOW,
+		"ad_supplementary_text_md": FieldAction.OVERWRITE_NOT_NONE,
 		"adserver_click_url": FieldAction.ALLOW_EMPTY,
 		"adserver_imp_pixel": FieldAction.ALLOW_EMPTY,
 		"all_awardings": FieldAction.OVERWRITE_NOT_NONE,
