@@ -15,7 +15,7 @@ import logging.handlers
 
 sys.path.append('personal')
 
-log = discord_logging.init_logging(debug=True)
+log = discord_logging.init_logging(debug=False)
 
 import utils
 import classes
@@ -192,7 +192,11 @@ if __name__ == "__main__":
 	parser.add_argument('--input', help='Input folder', required=True)
 	parser.add_argument('--output', help='Output folder', required=True)
 	parser.add_argument('--pushshift', help='The pushshift token')
+	parser.add_argument("--debug", help="Enable debug logging", action='store_const', const=True, default=False)
 	args = parser.parse_args()
+
+	if args.debug:
+		discord_logging.set_level(logging.DEBUG)
 
 	input_folders = [
 		(os.path.join(args.input, "ingest"), IngestType.INGEST),
