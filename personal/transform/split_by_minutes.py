@@ -12,7 +12,7 @@ NEWLINE_ENCODED = "\n".encode('utf-8')
 
 
 if __name__ == "__main__":
-	input_file = r"\\MYCLOUDPR4100\Public\RS_2023-05.zst"
+	input_file = r"\\MYCLOUDPR4100\Public\RC_2023-05.zst"
 	output_folder = r"\\MYCLOUDPR4100\Public\ingest\download"
 	file_type = "comments" if "RC" in input_file else "submissions"
 

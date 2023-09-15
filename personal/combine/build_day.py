@@ -15,7 +15,7 @@ import logging.handlers
 
 sys.path.append('personal')
 
-log = discord_logging.init_logging(debug=False)
+log = discord_logging.init_logging(debug=True)
 
 import utils
 import classes
@@ -133,10 +133,10 @@ def build_day(day_to_process, input_folders, output_folder, object_type, reddit)
 				working_highest_minute = last_minute_of_day
 			else:
 				working_highest_minute = minute_iterator - timedelta(minutes=1)
-			missing_ids = objects.get_missing_ids_by_minutes(working_lowest_minute, working_highest_minute)
+			missing_ids, start_id, end_id = objects.get_missing_ids_by_minutes(working_lowest_minute, working_highest_minute)
 			log.debug(
-				f"Backfilling from: {working_lowest_minute.strftime('%y-%m-%d_%H-%M')} to "
-				f"{working_highest_minute.strftime('%y-%m-%d_%H-%M')} with {len(missing_ids)} ids")
+				f"Backfilling from: {working_lowest_minute.strftime('%y-%m-%d_%H-%M')} ({utils.base36encode(start_id)}|{start_id}) to "
+				f"{working_highest_minute.strftime('%y-%m-%d_%H-%M')} ({utils.base36encode(end_id)}|{end_id}) with {len(missing_ids)} ({end_id - start_id}) ids")
 
 			for chunk in utils.chunk_list(missing_ids, 50):
 				pushshift_objects, pushshift_token = query_pushshift(chunk, pushshift_token, object_type)
@@ -149,6 +149,10 @@ def build_day(day_to_process, input_folders, output_folder, object_type, reddit)
 				for reddit_object in reddit_objects:
 					if objects.add_object(reddit_object['data'], IngestType.BACKFILL):
 						unmatched_field = True
+
+			for missing_id in missing_ids:
+				if missing_id not in objects.by_id:
+					objects.add_missing_object(missing_id)
 
 			objects.delete_objects_below_minute(working_lowest_minute)
 			while working_lowest_minute <= working_highest_minute:
@@ -164,7 +168,7 @@ def build_day(day_to_process, input_folders, output_folder, object_type, reddit)
 					objects.delete_object_id(obj['id'])
 				log.info(
 					f"Wrote up to {working_lowest_minute.strftime('%y-%m-%d_%H-%M')} : "
-					f"{objects.get_counts_string_by_minute(working_lowest_minute, [IngestType.PUSHSHIFT, IngestType.BACKFILL])}")
+					f"{objects.get_counts_string_by_minute(working_lowest_minute, [IngestType.PUSHSHIFT, IngestType.BACKFILL, IngestType.MISSING])}")
 				output_handle.close()
 				working_lowest_minute += timedelta(minutes=1)
 

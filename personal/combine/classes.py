@@ -186,6 +186,7 @@ class IngestType(Enum):
 	DOWNLOAD = 3
 	PUSHSHIFT = 4
 	BACKFILL = 5
+	MISSING = 6
 
 
 class ObjectDict:
@@ -233,7 +234,13 @@ class ObjectDict:
 		return "|".join(bldr)
 
 	def get_counts_string_by_minute(self, minute, ingest_types):
-		return ObjectDict.get_counts_string_from_dict(self.counts[minute], ingest_types)
+		count_string = ObjectDict.get_counts_string_from_dict(self.counts[minute], ingest_types)
+		minute_dict = self.by_minute.get(minute)
+		if minute_dict is None:
+			range_string = ""
+		else:
+			range_string = f" - {len(minute_dict.obj_list)} ({minute_dict.max_id - minute_dict.min_id}) ({utils.base36encode(minute_dict.min_id)}-{utils.base36encode(minute_dict.max_id)})"
+		return count_string + range_string
 
 	def get_counts_string(self):
 		sum_dict = defaultdict(lambda: defaultdict(int))
@@ -242,6 +249,7 @@ class ObjectDict:
 				if ingest_type in counts_dict:
 					sum_dict[ingest_type][True] += counts_dict[ingest_type][True]
 					sum_dict[ingest_type][False] += counts_dict[ingest_type][False]
+
 		return ObjectDict.get_counts_string_from_dict(sum_dict, IngestType)
 
 	def get_missing_ids_by_minutes(self, start_minute, end_minute):
@@ -252,7 +260,7 @@ class ObjectDict:
 			string_id = utils.base36encode(int_id)
 			if not self.contains_id(string_id):
 				missing_ids.append(string_id)
-		return missing_ids
+		return missing_ids, start_id, end_id
 
 	def add_object(self, obj, ingest_type):
 		created_utc = datetime.utcfromtimestamp(obj["created_utc"])
@@ -270,6 +278,17 @@ class ObjectDict:
 		self.counts[created_minute][ingest_type][True] += 1
 		self.min_id, self.max_id = utils.merge_lowest_highest_id(obj['id'], self.min_id, self.max_id)
 		return unmatched_field
+
+	def add_missing_object(self, obj_id):
+		if obj_id in self.by_id:
+			return
+		int_id = utils.base36decode(obj_id)
+		for minute, minute_dict in self.by_minute.items():
+			if minute_dict.min_id is None:
+				continue
+			if minute_dict.min_id < int_id < minute_dict.max_id:
+				self.counts[minute][IngestType.MISSING][True] += 1
+				return
 
 
 class ObjectMinuteList:
