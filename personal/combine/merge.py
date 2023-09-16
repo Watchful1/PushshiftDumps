@@ -58,7 +58,7 @@ field_actions = {
 		"collapsed_because_crowd_control": FieldAction.ALLOW_EMPTY,
 		"collapsed_reason": FieldAction.OVERWRITE,
 		"collapsed_reason_code": FieldAction.OVERWRITE,
-		"comment_type": FieldAction.ALLOW_EMPTY,
+		"comment_type": FieldAction.OVERWRITE_NOT_NONE,
 		"controversiality": FieldAction.OVERWRITE,
 		"created": FieldAction.OVERWRITE_IF_NONE,
 		"created_utc": FieldAction.OVERWRITE_IF_NONE,
