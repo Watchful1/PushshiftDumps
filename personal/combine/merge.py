@@ -72,7 +72,7 @@ field_actions = {
 		"id": FieldAction.ALLOW,
 		"ignore_reports": FieldAction.DELETE,
 		"is_submitter": FieldAction.DONT_OVERWRITE,
-		"likes": FieldAction.ALLOW_EMPTY,
+		"likes": FieldAction.OVERWRITE_NOT_NONE,
 		"link_id": FieldAction.ALLOW,
 		"locked": FieldAction.OVERWRITE,
 		"media_metadata": FieldAction.OVERWRITE,
@@ -106,7 +106,7 @@ field_actions = {
 		"top_awarded_type": FieldAction.ALLOW_EMPTY,
 		"total_awards_received": FieldAction.OVERWRITE_NOT_NONE,
 		"treatment_tags": FieldAction.OVERWRITE_NOT_NONE,
-		"unrepliable_reason": FieldAction.ALLOW_EMPTY,
+		"unrepliable_reason": FieldAction.OVERWRITE_NOT_NONE,
 		"ups": FieldAction.OVERWRITE_NOT_NONE,
 		"user_reports": FieldAction.SPECIAL_NO_OVERWRITE,
 		"user_reports_dismissed": FieldAction.SPECIAL_NO_OVERWRITE,
@@ -182,9 +182,9 @@ field_actions = {
 		"impression_id": FieldAction.ALLOW_EMPTY,
 		"impression_id_str": FieldAction.ALLOW_EMPTY,
 		"is_blank": FieldAction.ALLOW_EMPTY,
-		"is_created_from_ads_ui": FieldAction.ALLOW,
+		"is_created_from_ads_ui": FieldAction.OVERWRITE_NOT_NONE,
 		"is_crosspostable": FieldAction.OVERWRITE,
-		"is_gallery": FieldAction.ALLOW,
+		"is_gallery": FieldAction.OVERWRITE_NOT_NONE,
 		"is_meta": FieldAction.OVERWRITE,
 		"is_original_content": FieldAction.OVERWRITE,
 		"is_reddit_media_domain": FieldAction.OVERWRITE,
@@ -192,7 +192,7 @@ field_actions = {
 		"is_self": FieldAction.DONT_OVERWRITE,
 		"is_survey_ad": FieldAction.ALLOW_EMPTY,
 		"is_video": FieldAction.OVERWRITE,
-		"likes": FieldAction.ALLOW_EMPTY,
+		"likes": FieldAction.OVERWRITE_NOT_NONE,
 		"link_flair_background_color": FieldAction.OVERWRITE_NOT_NONE,
 		"link_flair_css_class": FieldAction.OVERWRITE_NOT_NONE,
 		"link_flair_richtext": FieldAction.OVERWRITE_NOT_NONE,
@@ -225,6 +225,7 @@ field_actions = {
 		"poll_data": FieldAction.OVERWRITE_NOT_NONE,
 		"post_hint": FieldAction.OVERWRITE,
 		"preview": FieldAction.OVERWRITE_NOT_NONE,
+		"previous_selftext": FieldAction.ALLOW,
 		"priority_id": FieldAction.ALLOW_EMPTY,
 		"product_ids": FieldAction.ALLOW_EMPTY,
 		"promo_layout": FieldAction.OVERWRITE,
@@ -241,6 +242,7 @@ field_actions = {
 		"report_reasons": FieldAction.SPECIAL_NO_OVERWRITE,
 		"retrieved_on": FieldAction.SPECIAL,
 		"retrieved_utc": FieldAction.SPECIAL,
+		"rte_mode": FieldAction.OVERWRITE_NOT_NONE,
 		"saved": FieldAction.SPECIAL_NO_OVERWRITE,
 		"score": FieldAction.OVERWRITE_NOT_NONE,
 		"secure_media": FieldAction.OVERWRITE_NOT_NONE,
@@ -271,6 +273,7 @@ field_actions = {
 		"total_awards_received": FieldAction.OVERWRITE_NOT_NONE,
 		"treatment_tags": FieldAction.OVERWRITE_NOT_NONE,
 		"tournament_data": FieldAction.OVERWRITE_NOT_NONE,
+		"unrepliable_reason": FieldAction.OVERWRITE_NOT_NONE,
 		"updated_on": FieldAction.SPECIAL,
 		"updated_utc": FieldAction.SPECIAL,
 		"ups": FieldAction.OVERWRITE_NOT_NONE,
@@ -318,10 +321,10 @@ def merge_fields(existing_obj, new_obj, obj_type):
 
 		original_value = existing_obj.get(key)
 		if new_value != original_value:
-			if isinstance(new_value, str) and unencode_regex.search(new_value):
-				new_value_no_encode = unencode_regex.sub(replace, new_value)
-				if new_value_no_encode == original_value:
-					continue
+			# if isinstance(new_value, str) and unencode_regex.search(new_value):
+			# 	new_value_no_encode = unencode_regex.sub(replace, new_value)
+			# 	if new_value_no_encode == original_value:
+			# 		continue
 			if action == FieldAction.OVERWRITE:
 				existing_obj[key] = new_value
 			elif action == FieldAction.OVERWRITE_NOT_NONE:
