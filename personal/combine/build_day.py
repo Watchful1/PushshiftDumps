@@ -39,9 +39,11 @@ def load_pushshift_token():
 
 
 def re_auth_pushshift(old_token):
-	response = requests.post(f"https://auth.pushshift.io/refresh?access_token={old_token}")
+	url = f"https://auth.pushshift.io/refresh?access_token={old_token}"
+	log.warning(f"Reauth request: {url}")
+	response = requests.post(url)
 	result = response.json()
-	log.warning(f"Reauth responce: {str(result)}")
+	log.warning(f"Reauth response: {str(result)}")
 	new_token = result['access_token']
 	log.warning(f"New pushshift token: {new_token}")
 	save_pushshift_token(new_token)
@@ -67,7 +69,9 @@ def query_pushshift(ids, bearer, object_type):
 		if response.status_code == 200:
 			break
 		if response.status_code == 403:
-			log.warning(f"Pushshift unauthorized, trying reauth")
+			log.warning(f"Pushshift 403, trying reauth")
+			log.warning(url)
+			log.warning(f"'Authorization': Bearer {bearer}")
 			bearer = re_auth_pushshift(bearer)
 		time.sleep(2)
 	if response.status_code != 200:
@@ -235,6 +239,7 @@ if __name__ == "__main__":
 	)
 
 	if args.pushshift is not None:
+		log.warning(f"Saving pushshift token: {args.pushshift}")
 		save_pushshift_token(args.pushshift)
 
 	while start_date <= end_date:
