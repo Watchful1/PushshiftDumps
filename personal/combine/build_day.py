@@ -98,6 +98,7 @@ def end_of_day(input_minute):
 
 def build_day(day_to_process, input_folders, output_folder, object_type, reddit):
 	pushshift_token = load_pushshift_token()
+	log.info(f"Using pushshift token: {pushshift_token}")
 
 	file_type = "comments" if object_type == ObjectType.COMMENT else "submissions"
 
