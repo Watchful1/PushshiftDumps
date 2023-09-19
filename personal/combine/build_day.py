@@ -44,11 +44,17 @@ def re_auth_pushshift(old_token):
 	response = requests.post(url)
 	result = response.json()
 	log.warning(f"Reauth response: {str(result)}")
-	new_token = result['access_token']
-	log.warning(f"New pushshift token: {new_token}")
-	save_pushshift_token(new_token)
 	discord_logging.flush_discord()
-	return new_token
+	if 'access_token' in result:
+		new_token = result['access_token']
+		log.warning(f"New pushshift token: {new_token}")
+		save_pushshift_token(new_token)
+		discord_logging.flush_discord()
+		return new_token
+	elif 'detail' in result:
+		log.warning(f"Reauth failed: {result['detail']}")
+		discord_logging.flush_discord()
+		sys.exit(1)
 
 
 def query_pushshift(ids, bearer, object_type):
@@ -76,6 +82,7 @@ def query_pushshift(ids, bearer, object_type):
 		time.sleep(2)
 	if response.status_code != 200:
 		log.warning(f"4 requests failed with status code {response.status_code}")
+		sys.exit(1)
 	return response.json()['data'], bearer
 
 
