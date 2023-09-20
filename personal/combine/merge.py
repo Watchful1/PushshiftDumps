@@ -93,6 +93,7 @@ field_actions = {
 		"report_reasons": FieldAction.SPECIAL_NO_OVERWRITE,
 		"retrieved_on": FieldAction.SPECIAL,
 		"retrieved_utc": FieldAction.SPECIAL,
+		"rte_mode": FieldAction.OVERWRITE_NOT_NONE,
 		"saved": FieldAction.SPECIAL_NO_OVERWRITE,
 		"score": FieldAction.OVERWRITE_NOT_NONE,
 		"score_hidden": FieldAction.OVERWRITE,

@@ -188,7 +188,8 @@ def build_day(day_to_process, input_folders, output_folder, object_type, reddit)
 
 		discord_logging.flush_discord()
 		if unmatched_field:
-			log.info(f"Unmatched field, aborting")
+			log.warning(f"Unmatched field, aborting")
+			discord_logging.flush_discord()
 			sys.exit(1)
 
 		minute_iterator += timedelta(minutes=1)
