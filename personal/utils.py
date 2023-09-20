@@ -44,6 +44,7 @@ def read_obj_zst_meta(file_name):
 			lines = (buffer + chunk).split("\n")
 
 			for line in lines[:-1]:
+				line = line.strip()
 				try:
 					json_object = json.loads(line)
 				except (KeyError, json.JSONDecodeError) as err:
