@@ -52,9 +52,19 @@ def re_auth_pushshift(old_token):
 		discord_logging.flush_discord()
 		return new_token
 	elif 'detail' in result:
+		if result['detail'] == 'Access token is still active and can not be refreshed.':
+			log.warning(f"Access token still active, trying request again")
+			time.sleep(5)
+			return old_token
+
 		log.warning(f"Reauth failed: {result['detail']}")
 		discord_logging.flush_discord()
 		sys.exit(1)
+	else:
+		log.warning(f"Something went wrong re-authing")
+		discord_logging.flush_discord()
+		sys.exit(1)
+
 
 
 def query_pushshift(ids, bearer, object_type):
