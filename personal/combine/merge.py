@@ -67,6 +67,7 @@ field_actions = {
 		"editable": FieldAction.OVERWRITE,
 		"edited": FieldAction.OVERWRITE_NOT_NONE,
 		"edited_on": FieldAction.ALLOW,
+		"expression_asset_data": FieldAction.OVERWRITE_NOT_NONE,
 		"gilded": FieldAction.OVERWRITE_NOT_NONE,
 		"gildings": FieldAction.OVERWRITE_NOT_NONE,
 		"id": FieldAction.ALLOW,
