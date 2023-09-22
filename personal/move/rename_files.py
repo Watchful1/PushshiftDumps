@@ -7,7 +7,7 @@ log = discord_logging.init_logging()
 
 
 if __name__ == "__main__":
-	parent_folder = r"\\MYCLOUDPR4100\Public\ingest\combined\submissions"
+	parent_folder = r"\\MYCLOUDPR4100\Public\ingest\combined\comments"
 	files = []
 	for folder_name in os.listdir(parent_folder):
 		folder = os.path.join(parent_folder, folder_name)
@@ -20,7 +20,7 @@ if __name__ == "__main__":
 	count_moved = 0
 	for folder, old_file in files:
 		old_path = os.path.join(folder, old_file)
-		new_file = old_file.replace("RC_", "RS_")
+		new_file = old_file.replace("RS_", "RC_")
 		new_path = os.path.join(folder, new_file)
 
 		os.rename(old_path, new_path)
