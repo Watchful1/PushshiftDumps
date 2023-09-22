@@ -66,7 +66,6 @@ def re_auth_pushshift(old_token):
 		sys.exit(1)
 
 
-
 def query_pushshift(ids, bearer, object_type):
 	object_name = "comment" if object_type == ObjectType.COMMENT else "submission"
 	url = f"https://api.pushshift.io/reddit/{object_name}/search?limit=1000&ids={','.join(ids)}"
@@ -85,7 +84,7 @@ def query_pushshift(ids, bearer, object_type):
 		if response.status_code == 200:
 			break
 		if response.status_code == 403:
-			log.warning(f"Pushshift 403, trying reauth")
+			log.warning(f"Pushshift 403, trying reauth: {response.json()}")
 			log.warning(url)
 			log.warning(f"'Authorization': Bearer {bearer}")
 			bearer = re_auth_pushshift(bearer)
