@@ -1,5 +1,7 @@
 import zstandard
 import json
+import os
+from zst_blocks import ZstBlocksFile
 
 
 def read_obj_zst(file_name):
@@ -73,6 +75,14 @@ class OutputZst:
 	def __exit__(self, exc_type, exc_value, exc_traceback):
 		self.close()
 		return True
+
+
+# copied from https://github.com/ArthurHeitmann/zst_blocks_format
+def read_obj_zst_blocks(file_name):
+	with open(file_name, "rb") as file:
+		for row in ZstBlocksFile.streamRows(file):
+			line = row.decode()
+			yield json.loads(line.strip())
 
 
 def base36encode(integer: int) -> str:

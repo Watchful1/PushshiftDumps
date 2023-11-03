@@ -8,7 +8,7 @@ log = discord_logging.init_logging()
 
 
 if __name__ == "__main__":
-	input_path = r"\\MYCLOUDPR4100\Public\ingest\combined\comments\RC_23-07-10.zst"
+	input_path = r"\\MYCLOUDPR4100\Public\reddit\comments\RC_2023-09.zst"
 
 	input_file_paths = []
 	if os.path.isdir(input_path):
@@ -32,7 +32,7 @@ if __name__ == "__main__":
 		for obj, line, file_bytes_processed in utils.read_obj_zst_meta(file_path):
 			new_timestamp = int(obj['created_utc'])
 			created = datetime.utcfromtimestamp(new_timestamp)
-			if previous_timestamp is not None and previous_timestamp - (60 * 60) > new_timestamp:
+			if previous_timestamp is not None and previous_timestamp - (2) > new_timestamp:
 				log.warning(f"Out of order timestamps {datetime.utcfromtimestamp(previous_timestamp).strftime('%Y-%m-%d %H:%M:%S')} - 4 hours > {created.strftime('%Y-%m-%d %H:%M:%S')}")
 			previous_timestamp = new_timestamp
 			file_lines += 1

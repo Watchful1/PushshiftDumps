@@ -7,7 +7,7 @@ from datetime import datetime
 import logging.handlers
 
 # put the path to the input file, or a folder of files to process all of
-input_file = r"\\MYCLOUDPR4100\Public\reddit_test"
+input_file = r"\\MYCLOUDPR4100\Public\reddit\subreddits/CryptoCurrency_submissions.zst"
 # put the name or path to the output file. The file extension from below will be added automatically. If the input file is a folder, the output will be treated as a folder as well
 output_file = r"\\MYCLOUDPR4100\Public\output"
 # the format to output in, pick from the following options
@@ -28,8 +28,8 @@ single_field = None
 write_bad_lines = True
 
 # only output items between these two dates
-from_date = datetime.strptime("2005-01-01", "%Y-%m-%d")
-to_date = datetime.strptime("2025-01-01", "%Y-%m-%d")
+from_date = datetime.strptime("2022-01-01", "%Y-%m-%d")
+to_date = datetime.strptime("2022-12-31", "%Y-%m-%d")
 
 # the field to filter on, the values to filter with and whether it should be an exact match
 # some examples:
@@ -76,7 +76,7 @@ to_date = datetime.strptime("2025-01-01", "%Y-%m-%d")
 # if you want only top level comments instead of all comments, you can set field to "parent_id" instead of "link_id"
 
 field = "title"
-values = ['post race discussion']
+values = ['']
 # if you have a long list of values, you can put them in a file and put the filename here. If set this overrides the value list above
 # if this list is very large, it could greatly slow down the process
 values_file = None

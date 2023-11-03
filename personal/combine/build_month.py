@@ -142,6 +142,7 @@ if __name__ == "__main__":
 
 	log.info(f"Input folder: {args.input}")
 	log.info(f"Output folder: {args.output}")
+	log.info(f"Month: {args.month}")
 	log.info(f"Compression level: {level}")
 
 	prefix = None
