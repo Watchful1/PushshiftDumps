@@ -1,3 +1,6 @@
+import sys
+sys.path.append('personal')
+
 import discord_logging
 import os
 import zstandard
