@@ -155,7 +155,7 @@ if __name__ == "__main__":
 		sys.exit(2)
 
 	output_path = os.path.join(args.output, args.type, f"{prefix}_{month.strftime('%Y-%m')}.zst")
-	output_handle = zstandard.ZstdCompressor(level=level).stream_writer(open(output_path, 'wb'))
+	output_handle = zstandard.ZstdCompressor(level=level, threads=-1).stream_writer(open(output_path, 'wb'))
 
 	count_objects = 0
 	minute_iterator = month
