@@ -57,32 +57,31 @@ if __name__ == "__main__":
 		log.error(f"Invalid type: {args.type}")
 		sys.exit(2)
 
-	count_objects = 0
+	total_objects = 0
+	total_bytes = 0
 	minute_iterator = month
 	end_time = month.replace(month=month.month + 1)
-	total_bytes = 0
 	while minute_iterator < end_time:
 		minute_file_path = os.path.join(args.input, args.type, minute_iterator.strftime('%y-%m-%d'), f"{prefix}_{minute_iterator.strftime('%y-%m-%d_%H-%M')}.zst")
 		for obj, line, _ in utils.read_obj_zst_meta(minute_file_path):
 			total_bytes += len(line.encode('utf-8'))
 			total_bytes += 1
 
-			count_objects += 1
-			if count_objects % 1000000 == 0:
-				log.info(f"Counting: {minute_iterator.strftime('%y-%m-%d_%H-%M')} : {count_objects:,} : {total_bytes,}")
+			total_objects += 1
+			if total_objects % 1000000 == 0:
+				log.info(f"Counting: {minute_iterator.strftime('%y-%m-%d_%H-%M')} : {total_objects:,} : {total_bytes:,}")
 
 		minute_iterator += timedelta(minutes=1)
 
-	log.info(f"Counting: {minute_iterator.strftime('%y-%m-%d_%H-%M')} : {count_objects:,} : {total_bytes,}")
-
+	log.info(f"Counting: {minute_iterator.strftime('%y-%m-%d_%H-%M')} : {total_objects:,} : {total_bytes:,}")
 
 	output_path = os.path.join(args.output, args.type, f"{prefix}_{month.strftime('%Y-%m')}.zst")
-	output_handle = zstandard.ZstdCompressor(level=level, threads=-1).stream_writer(open(output_path, 'wb'))
+	output_handle = zstandard.ZstdCompressor(level=level, write_content_size=True, threads=-1).stream_writer(open(output_path, 'wb'), size=total_bytes)
 
 	count_objects = 0
+	count_bytes = 0
 	minute_iterator = month
 	end_time = month.replace(month=month.month + 1)
-	total_bytes = 0
 	while minute_iterator < end_time:
 		minute_file_path = os.path.join(args.input, args.type, minute_iterator.strftime('%y-%m-%d'), f"{prefix}_{minute_iterator.strftime('%y-%m-%d_%H-%M')}.zst")
 		for obj, line, _ in utils.read_obj_zst_meta(minute_file_path):
@@ -94,9 +93,9 @@ if __name__ == "__main__":
 
 			count_objects += 1
 			if count_objects % 100000 == 0:
-				log.info(f"Writing: {minute_iterator.strftime('%y-%m-%d_%H-%M')} : {count_objects:,} : {total_bytes,}")
+				log.info(f"Writing: {minute_iterator.strftime('%y-%m-%d_%H-%M')} : {count_objects:,}/{total_objects:,} : {count_bytes:,}/{total_bytes:,}")
 
 		minute_iterator += timedelta(minutes=1)
 
-	log.info(f"Writing: {minute_iterator.strftime('%y-%m-%d_%H-%M')} : {count_objects:,} : {total_bytes,}")
+	log.info(f"Writing: {minute_iterator.strftime('%y-%m-%d_%H-%M')} : {count_objects:,}/{total_objects:,} : {count_bytes:,}/{total_bytes:,}")
 	output_handle.close()
