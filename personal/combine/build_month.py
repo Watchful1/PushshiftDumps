@@ -76,7 +76,7 @@ if __name__ == "__main__":
 	log.info(f"Counting: {minute_iterator.strftime('%y-%m-%d_%H-%M')} : {total_objects:,} : {total_bytes:,}")
 
 	output_path = os.path.join(args.output, args.type, f"{prefix}_{month.strftime('%Y-%m')}.zst")
-	output_handle = zstandard.ZstdCompressor(level=level, write_content_size=True, threads=-1).stream_writer(open(output_path, 'wb'), size=total_bytes)
+	output_handle = zstandard.ZstdCompressor(level=level, write_content_size=True, write_checksum=True, threads=-1).stream_writer(open(output_path, 'wb'), size=total_bytes)
 
 	count_objects = 0
 	count_bytes = 0
@@ -86,8 +86,8 @@ if __name__ == "__main__":
 		minute_file_path = os.path.join(args.input, args.type, minute_iterator.strftime('%y-%m-%d'), f"{prefix}_{minute_iterator.strftime('%y-%m-%d_%H-%M')}.zst")
 		for obj, line, _ in utils.read_obj_zst_meta(minute_file_path):
 			line_encoded = line.encode('utf-8')
-			total_bytes += len(line_encoded)
-			total_bytes += 1
+			count_bytes += len(line_encoded)
+			count_bytes += 1
 			output_handle.write(line_encoded)
 			output_handle.write(NEWLINE_ENCODED)
 
