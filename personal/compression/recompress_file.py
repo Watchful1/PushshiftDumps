@@ -1,6 +1,5 @@
 import argparse
 import zstandard
-import utils
 import discord_logging
 import time
 import sys
@@ -8,6 +7,8 @@ import sys
 sys.path.append('personal')
 
 log = discord_logging.init_logging()
+
+import utils
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description="Take all the zst files in the input folder, extract them and compress them again at the ratio specified")
