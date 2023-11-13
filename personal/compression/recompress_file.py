@@ -3,7 +3,9 @@ import zstandard
 import utils
 import discord_logging
 import time
-import os
+import sys
+
+sys.path.append('personal')
 
 log = discord_logging.init_logging()
 
@@ -16,23 +18,6 @@ if __name__ == '__main__':
 
 	log.info(f"Input file {args.input}")
 	log.info(f"Output file {args.output}")
-
-	# files = []
-	# total_size = 0
-	# for file_name in os.listdir(args.input):
-	# 	file_path = os.path.join(args.input, file_name)
-	# 	if file_name.endswith(".zst") and os.path.isfile(file_path):
-	# 		file_size = os.stat(file_path).st_size
-	# 		total_size += file_size
-	# 		files.append((file_name, file_size))
-	# 		if len(files) % 1000 == 0:
-	# 			log.info(f"Loaded {len(files)} files")
-	# log.info(f"Loaded {len(files)} files of total size {total_size:,}")
-	#
-	# level = int(args.level)
-	# log.info(f"Writing files out to {args.output} at ratio {level}")
-	# if not os.path.exists(args.output):
-	# 	os.makedirs(args.output)
 
 	total_objects = 0
 	total_bytes = 0
