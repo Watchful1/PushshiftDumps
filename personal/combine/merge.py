@@ -26,6 +26,7 @@ class ObjectType(Enum):
 
 field_actions = {
 	ObjectType.COMMENT: {
+		"_meta": FieldAction.OVERWRITE,
 		"all_awardings": FieldAction.OVERWRITE_NOT_NONE,
 		"approved": FieldAction.DELETE,
 		"approved_at_utc": FieldAction.SPECIAL_NO_OVERWRITE,
@@ -117,6 +118,7 @@ field_actions = {
 		"utc_datetime_str": FieldAction.DELETE,
 	},
 	ObjectType.SUBMISSION: {
+		"_meta": FieldAction.OVERWRITE,
 		"ad_promoted_user_posts": FieldAction.OVERWRITE_NOT_NONE,
 		"ad_supplementary_text_md": FieldAction.OVERWRITE_NOT_NONE,
 		"adserver_click_url": FieldAction.ALLOW_EMPTY,
