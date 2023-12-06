@@ -119,8 +119,10 @@ field_actions = {
 	},
 	ObjectType.SUBMISSION: {
 		"_meta": FieldAction.OVERWRITE,
+		"ad_business": FieldAction.OVERWRITE_NOT_NONE,
 		"ad_promoted_user_posts": FieldAction.OVERWRITE_NOT_NONE,
 		"ad_supplementary_text_md": FieldAction.OVERWRITE_NOT_NONE,
+		"ad_user_targeting": FieldAction.OVERWRITE_NOT_NONE,
 		"adserver_click_url": FieldAction.ALLOW_EMPTY,
 		"adserver_imp_pixel": FieldAction.ALLOW_EMPTY,
 		"all_awardings": FieldAction.OVERWRITE_NOT_NONE,
