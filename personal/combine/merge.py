@@ -212,9 +212,9 @@ field_actions = {
 		"media_metadata": FieldAction.OVERWRITE_NOT_NONE,
 		"media_only": FieldAction.OVERWRITE,
 		"mobile_ad_url": FieldAction.OVERWRITE_NOT_NONE,
-		"mod_note": FieldAction.ALLOW_EMPTY,
-		"mod_reason_by": FieldAction.ALLOW_EMPTY,
-		"mod_reason_title": FieldAction.ALLOW_EMPTY,
+		"mod_note": FieldAction.SPECIAL_NO_OVERWRITE,
+		"mod_reason_by": FieldAction.SPECIAL_NO_OVERWRITE,
+		"mod_reason_title": FieldAction.SPECIAL_NO_OVERWRITE,
 		"mod_reports": FieldAction.SPECIAL_NO_OVERWRITE,
 		"mod_reports_dismissed": FieldAction.SPECIAL_NO_OVERWRITE,
 		"name": FieldAction.OVERWRITE_IF_NONE,
@@ -410,7 +410,7 @@ def parse_fields(new_obj, obj_type):
 			elif action == FieldAction.SPECIAL_NO_OVERWRITE:
 				if key in ["can_mod_post", "saved", "clicked", "visited", "author_is_blocked"]:
 					new_obj[key] = False
-				elif key in ["banned_at_utc", "banned_by", "approved_at_utc", "approved_by", "user_reports_dismissed", "mod_reports_dismissed", "removed_by"]:
+				elif key in ["banned_at_utc", "banned_by", "approved_at_utc", "approved_by", "user_reports_dismissed", "mod_reports_dismissed", "removed_by", "mod_note", "mod_reason_by", "mod_reason_title"]:
 					new_obj[key] = None
 				elif key in ["num_reports", "downs"]:
 					new_obj[key] = 0
