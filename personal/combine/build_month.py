@@ -60,7 +60,7 @@ if __name__ == "__main__":
 	total_objects = 0
 	total_bytes = 0
 	minute_iterator = month
-	if month == 12:
+	if month.month == 12:
 		end_time = month.replace(year=month.year + 1, month=1)
 	else:
 		end_time = month.replace(month=month.month + 1)
