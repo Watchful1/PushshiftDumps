@@ -8,8 +8,8 @@ log = discord_logging.init_logging()
 if __name__ == "__main__":
 	day = None
 	day_comments = 0
-	for comment in utils.read_obj_zst(r"\\MYCLOUDPR4100\Public\reddit_final\wallstreetbets_comments.zst"):
-		created_day = datetime.utcfromtimestamp(int(comment['created_utc'])).strftime("%m/%d/%y")
+	for comment in utils.read_obj_zst(r"C:\Users\greg\Desktop\Drive\pushshift\haley0530\chatbots_submissions.zst"):
+		created_day = datetime.utcfromtimestamp(int(comment['created_utc'])).strftime("%y-%m-%d")
 		if day is None:
 			day = created_day
 		if day != created_day:
