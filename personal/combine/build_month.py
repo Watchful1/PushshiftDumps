@@ -84,7 +84,10 @@ if __name__ == "__main__":
 	count_objects = 0
 	count_bytes = 0
 	minute_iterator = month
-	end_time = month.replace(month=month.month + 1)
+	if month.month == 12:
+		end_time = month.replace(year=month.year + 1, month=1)
+	else:
+		end_time = month.replace(month=month.month + 1)
 	while minute_iterator < end_time:
 		minute_file_path = os.path.join(args.input, args.type, minute_iterator.strftime('%y-%m-%d'), f"{prefix}_{minute_iterator.strftime('%y-%m-%d_%H-%M')}.zst")
 		for obj, line, _ in utils.read_obj_zst_meta(minute_file_path):
