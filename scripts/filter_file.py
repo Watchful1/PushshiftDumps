@@ -28,8 +28,8 @@ single_field = None
 write_bad_lines = True
 
 # only output items between these two dates
-from_date = datetime.strptime("2022-01-01", "%Y-%m-%d")
-to_date = datetime.strptime("2022-12-31", "%Y-%m-%d")
+from_date = datetime.strptime("2005-01-01", "%Y-%m-%d")
+to_date = datetime.strptime("2025-12-31", "%Y-%m-%d")
 
 # the field to filter on, the values to filter with and whether it should be an exact match
 # some examples:
