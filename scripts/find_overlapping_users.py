@@ -7,8 +7,8 @@ import zstandard
 import json
 
 input_files = [
-	r"\\MYCLOUDPR4100\Public\reddit\subreddits\srilanka_comments.zst",
-	r"\\MYCLOUDPR4100\Public\reddit\subreddits\Warthunder_comments.zst",
+	r"\\MYCLOUDPR4100\Public\reddit\subreddits23\Chattanooga_comments.zst",
+	r"\\MYCLOUDPR4100\Public\reddit\subreddits23\Graffiti_comments.zst",
 ]
 ignored_users = ['[deleted]', 'automoderator']
 min_comments_per_sub = 1

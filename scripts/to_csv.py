@@ -16,6 +16,13 @@ from datetime import datetime
 import logging.handlers
 
 
+# put the path to the input file
+input_file_path = r"\\MYCLOUDPR4100\Public\reddit\subreddits\CryptoCurrency_submissions.zst"
+# put the path to the output file, with the csv extension
+output_file_path = r"\\MYCLOUDPR4100\Public\CryptoCurrency_submissions.csv"
+# if you want a custom set of fields, put them in the following list. If you leave it empty the script will use a default set of fields
+fields = []
+
 log = logging.getLogger("bot")
 log.setLevel(logging.DEBUG)
 log.addHandler(logging.StreamHandler())
@@ -52,16 +59,21 @@ def read_lines_zst(file_name):
 
 
 if __name__ == "__main__":
-	input_file_path = sys.argv[1]
-	output_file_path = sys.argv[2]
-	fields = sys.argv[3].split(",")
+	if len(sys.argv) >= 3:
+		input_file_path = sys.argv[1]
+		output_file_path = sys.argv[2]
+		fields = sys.argv[3].split(",")
+
+	is_submission = "submission" in input_file_path
+	if not len(fields):
+		if is_submission:
+			fields = ["author","title","score","created","link","text","url"]
+		else:
+			fields = ["author","score","created","link","body"]
 
 	file_size = os.stat(input_file_path).st_size
-	file_lines = 0
-	file_bytes_processed = 0
-	line = None
-	created = None
-	bad_lines = 0
+	file_lines, bad_lines = 0, 0
+	line, created = None, None
 	output_file = open(output_file_path, "w", encoding='utf-8', newline="")
 	writer = csv.writer(output_file)
 	writer.writerow(fields)
@@ -71,7 +83,21 @@ if __name__ == "__main__":
 				obj = json.loads(line)
 				output_obj = []
 				for field in fields:
-					output_obj.append(str(obj[field]).encode("utf-8", errors='replace').decode())
+					if field == "created":
+						value = datetime.fromtimestamp(int(obj['created_utc'])).strftime("%Y-%m-%d %H:%M")
+					elif field == "link":
+						value = f"https://www.reddit.com{obj['permalink']}"
+					elif field == "author":
+						value = f"u/{obj['author']}"
+					elif field == "text":
+						if 'selftext' in obj:
+							value = obj['selftext']
+						else:
+							value = ""
+					else:
+						value = obj[field]
+
+					output_obj.append(str(value).encode("utf-8", errors='replace').decode())
 				writer.writerow(output_obj)
 
 				created = datetime.utcfromtimestamp(int(obj['created_utc']))

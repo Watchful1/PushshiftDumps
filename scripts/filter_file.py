@@ -7,7 +7,7 @@ from datetime import datetime
 import logging.handlers
 
 # put the path to the input file, or a folder of files to process all of
-input_file = r"\\MYCLOUDPR4100\Public\reddit\subreddits/CryptoCurrency_submissions.zst"
+input_file = r"\\MYCLOUDPR4100\Public\reddit\subreddits\CryptoCurrency_submissions.zst"
 # put the name or path to the output file. The file extension from below will be added automatically. If the input file is a folder, the output will be treated as a folder as well
 output_file = r"\\MYCLOUDPR4100\Public\output"
 # the format to output in, pick from the following options

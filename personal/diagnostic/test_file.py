@@ -8,7 +8,7 @@ log = discord_logging.init_logging()
 
 
 if __name__ == "__main__":
-	input_path = r"\\MYCLOUDPR4100\Public\reddit\comments\RC_2023-09.zst"
+	input_path = r"\\MYCLOUDPR4100\Public\reddit\submissions\RS_2023-04.zst"
 
 	input_file_paths = []
 	if os.path.isdir(input_path):
