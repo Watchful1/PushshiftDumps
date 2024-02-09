@@ -252,14 +252,26 @@ class ObjectDict:
 
 		return ObjectDict.get_counts_string_from_dict(sum_dict, IngestType)
 
-	def get_missing_ids_by_minutes(self, start_minute, end_minute):
+	def get_missing_ids_by_minutes(self, start_minute, end_minute, ignore_ids):
 		start_id = self.by_minute[start_minute].min_id
 		end_id = self.by_minute[end_minute].max_id
 		missing_ids = []
+		count_ignored_ids = 0
 		for int_id in range(start_id, end_id + 1):
+			ignored = False
+			for ignore_start, ignore_end in ignore_ids:
+				if ignore_start <= int_id <= ignore_end:
+					count_ignored_ids += 1
+					ignored = True
+					break
+			if ignored:
+				continue
+
 			string_id = utils.base36encode(int_id)
 			if not self.contains_id(string_id):
 				missing_ids.append(string_id)
+		if count_ignored_ids > 0:
+			log.warning(f"Ignored {count_ignored_ids} ids in range {utils.base36encode(start_id)}-{utils.base36encode(end_id)}")
 		return missing_ids, start_id, end_id
 
 	def add_object(self, obj, ingest_type):

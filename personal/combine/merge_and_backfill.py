@@ -112,7 +112,7 @@ def end_of_day(input_minute):
 	return input_minute.replace(hour=0, minute=0, second=0) + timedelta(days=1)
 
 
-def build_day(day_to_process, input_folders, output_folder, object_type, reddit):
+def build_day(day_to_process, input_folders, output_folder, object_type, reddit, ignore_ids):
 	pushshift_token = load_pushshift_token()
 	log.info(f"Using pushshift token: {pushshift_token}")
 
@@ -154,7 +154,7 @@ def build_day(day_to_process, input_folders, output_folder, object_type, reddit)
 				working_highest_minute = last_minute_of_day
 			else:
 				working_highest_minute = minute_iterator - timedelta(minutes=1)
-			missing_ids, start_id, end_id = objects.get_missing_ids_by_minutes(working_lowest_minute, working_highest_minute)
+			missing_ids, start_id, end_id = objects.get_missing_ids_by_minutes(working_lowest_minute, working_highest_minute, ignore_ids)
 			log.debug(
 				f"Backfilling from: {working_lowest_minute.strftime('%y-%m-%d_%H-%M')} ({utils.base36encode(start_id)}|{start_id}) to "
 				f"{working_highest_minute.strftime('%y-%m-%d_%H-%M')} ({utils.base36encode(end_id)}|{end_id}) with {len(missing_ids)} ({end_id - start_id}) ids")
@@ -215,6 +215,7 @@ if __name__ == "__main__":
 	parser.add_argument('--output', help='Output folder', required=True)
 	parser.add_argument('--pushshift', help='The pushshift token')
 	parser.add_argument("--debug", help="Enable debug logging", action='store_const', const=True, default=False)
+	parser.add_argument("--ignore_ids", help="Ignore ids between the id ranges listed", default=None)
 	args = parser.parse_args()
 
 	if args.debug:
@@ -247,6 +248,12 @@ if __name__ == "__main__":
 		log.error(f"Invalid type: {args.type}")
 		sys.exit(2)
 
+	ignore_ids = []
+	if args.ignore_ids is not None:
+		for id_range in args.ignore_ids.split(","):
+			start_id, end_id = id_range.split("-")
+			ignore_ids.append((utils.base36decode(start_id), utils.base36decode(end_id)))
+
 	user_name = "Watchful12"
 	reddit = praw.Reddit(user_name)
 
@@ -261,5 +268,5 @@ if __name__ == "__main__":
 		save_pushshift_token(args.pushshift)
 
 	while start_date <= end_date:
-		build_day(start_date, input_folders, args.output, object_type, reddit)
+		build_day(start_date, input_folders, args.output, object_type, reddit, ignore_ids)
 		start_date = end_of_day(start_date)
