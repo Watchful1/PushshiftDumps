@@ -236,7 +236,7 @@ class ObjectDict:
 	def get_counts_string_by_minute(self, minute, ingest_types):
 		count_string = ObjectDict.get_counts_string_from_dict(self.counts[minute], ingest_types)
 		minute_dict = self.by_minute.get(minute)
-		if minute_dict is None:
+		if minute_dict is None or minute_dict.max_id is None or minute_dict.min_id is None:
 			range_string = ""
 		else:
 			range_string = f" - {len(minute_dict.obj_list)}({minute_dict.max_id - minute_dict.min_id}) ({utils.base36encode(minute_dict.min_id)}-{utils.base36encode(minute_dict.max_id)})"
