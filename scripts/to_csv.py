@@ -17,9 +17,9 @@ import logging.handlers
 
 
 # put the path to the input file
-input_file_path = r"\\MYCLOUDPR4100\Public\reddit\subreddits\CryptoCurrency_submissions.zst"
+input_file_path = r"\\MYCLOUDPR4100\Public\reddit\subreddits\intel_comments.zst"
 # put the path to the output file, with the csv extension
-output_file_path = r"\\MYCLOUDPR4100\Public\CryptoCurrency_submissions.csv"
+output_file_path = r"\\MYCLOUDPR4100\Public\intel_comments.csv"
 # if you want a custom set of fields, put them in the following list. If you leave it empty the script will use a default set of fields
 fields = []
 
@@ -86,7 +86,10 @@ if __name__ == "__main__":
 					if field == "created":
 						value = datetime.fromtimestamp(int(obj['created_utc'])).strftime("%Y-%m-%d %H:%M")
 					elif field == "link":
-						value = f"https://www.reddit.com{obj['permalink']}"
+						if 'permalink' in obj:
+							value = f"https://www.reddit.com{obj['permalink']}"
+						else:
+							value = f"https://www.reddit.com/r/{obj['subreddit']}/comments/{obj['link_id'][3:]}/_/{obj['id']}/"
 					elif field == "author":
 						value = f"u/{obj['author']}"
 					elif field == "text":

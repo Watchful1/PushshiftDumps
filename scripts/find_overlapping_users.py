@@ -7,7 +7,7 @@ import zstandard
 import json
 
 input_files = [
-	r"\\MYCLOUDPR4100\Public\reddit\subreddits23\StyleCoordinators_comments.zst",
+	r"\\MYCLOUDPR4100\Public\reddit\subreddits23\baseballcards_comments.zst",
 	r"\\MYCLOUDPR4100\Public\reddit\subreddits23\classicwow_comments.zst",
 ]
 ignored_users = ['[deleted]', 'automoderator']
