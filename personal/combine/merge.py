@@ -97,7 +97,7 @@ field_actions = {
 		"retrieved_utc": FieldAction.SPECIAL,
 		"rte_mode": FieldAction.OVERWRITE_NOT_NONE,
 		"saved": FieldAction.SPECIAL_NO_OVERWRITE,
-		"score": FieldAction.OVERWRITE_NOT_NONE,
+		"score": FieldAction.SPECIAL,
 		"score_hidden": FieldAction.OVERWRITE,
 		"send_replies": FieldAction.OVERWRITE,
 		"spam": FieldAction.DELETE,
@@ -250,7 +250,7 @@ field_actions = {
 		"retrieved_utc": FieldAction.SPECIAL,
 		"rte_mode": FieldAction.OVERWRITE_NOT_NONE,
 		"saved": FieldAction.SPECIAL_NO_OVERWRITE,
-		"score": FieldAction.OVERWRITE_NOT_NONE,
+		"score": FieldAction.SPECIAL,
 		"secure_media": FieldAction.OVERWRITE_NOT_NONE,
 		"secure_media_embed": FieldAction.OVERWRITE_NOT_NONE,
 		"selftext": FieldAction.SPECIAL,
@@ -345,6 +345,10 @@ def merge_fields(existing_obj, new_obj, obj_type):
 						if 'previous_body' in existing_obj:
 							existing_obj['previous_body'] = original_value
 						existing_obj['body'] = new_value
+				elif key == "score":
+					if not is_empty(new_value):
+						if is_empty(original_value) or abs(new_value) > abs(original_value):
+							existing_obj['score'] = new_value
 				elif key == "selftext":
 					if not is_empty(new_value):
 						if 'previous_selftext' not in existing_obj:
@@ -393,7 +397,7 @@ def parse_fields(new_obj, obj_type):
 					unmatched_field = True
 					keys_to_delete.append(key)
 			elif action == FieldAction.SPECIAL:
-				if key in ["retrieved_on", "body", "selftext", "updated_on"]:
+				if key in ["retrieved_on", "body", "selftext", "updated_on", "score"]:
 					pass
 				elif key == "removal_reason" and new_value in ["legal", None]:
 					pass
