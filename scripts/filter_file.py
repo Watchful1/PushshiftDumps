@@ -7,9 +7,9 @@ from datetime import datetime
 import logging.handlers
 
 # put the path to the input file, or a folder of files to process all of
-input_file = r"\\MYCLOUDPR4100\Public\askreddit_comments_23.zst"
+input_file = r"\\MYCLOUDPR4100\Public\askreddit_comments.zst"
 # put the name or path to the output file. The file extension from below will be added automatically. If the input file is a folder, the output will be treated as a folder as well
-output_file = r"\\MYCLOUDPR4100\Public\askreddit_comments_hero"
+output_file = r"\\MYCLOUDPR4100\Public\output"
 # the format to output in, pick from the following options
 #   zst: same as the input, a zstandard compressed ndjson file. Can be read by the other scripts in the repo
 #   txt: an ndjson file, which is a text file with a separate json object on each line. Can be opened by any text editor
@@ -79,7 +79,7 @@ field = "body"
 values = ['']
 # if you have a long list of values, you can put them in a file and put the filename here. If set this overrides the value list above
 # if this list is very large, it could greatly slow down the process
-values_file = r"\\MYCLOUDPR4100\Public\askreddit_submissions_ids.txt"
+values_file = None
 exact_match = False
 
 

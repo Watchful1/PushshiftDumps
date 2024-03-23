@@ -7,10 +7,13 @@ import zstandard
 import json
 
 input_files = [
-	r"\\MYCLOUDPR4100\Public\reddit\subreddits23\baseballcards_comments.zst",
-	r"\\MYCLOUDPR4100\Public\reddit\subreddits23\classicwow_comments.zst",
+	r"\\MYCLOUDPR4100\Public\reddit\subreddits23\trading212_comments.zst",
+	r"\\MYCLOUDPR4100\Public\reddit\subreddits23\Fire_comments.zst",
+	r"\\MYCLOUDPR4100\Public\reddit\subreddits23\IAmTheMainCharacter_comments.zst",
+	r"\\MYCLOUDPR4100\Public\reddit\subreddits23\BrightonHoveAlbion_comments.zst",
 ]
-ignored_users = ['[deleted]', 'automoderator']
+ignored_users = {'[deleted]', 'automoderator'}
+ignored_users_file = "ignored.txt"
 min_comments_per_sub = 1
 file_name = "users.txt"
 require_first_subreddit = False  # if true, print users that occur in the first subreddit and any one of the following ones. Otherwise just find the most overlap between all subs
@@ -64,6 +67,11 @@ def read_lines_zst(file_name):
 
 
 if __name__ == "__main__":
+	if os.path.exists(ignored_users_file):
+		with open(ignored_users_file) as fh:
+			for user in fh.readlines():
+				ignored_users.add(user.strip().lower())
+
 	commenterSubreddits = defaultdict(int)
 	is_first = True
 	total_lines = 0
