@@ -1,3 +1,4 @@
+import sys
 from collections import defaultdict
 from datetime import datetime, timedelta
 import time
@@ -6,13 +7,19 @@ import logging.handlers
 import zstandard
 import json
 
-input_files = [
-	r"\\MYCLOUDPR4100\Public\reddit\subreddits23\trading212_comments.zst",
-	r"\\MYCLOUDPR4100\Public\reddit\subreddits23\Fire_comments.zst",
-	r"\\MYCLOUDPR4100\Public\reddit\subreddits23\IAmTheMainCharacter_comments.zst",
-	r"\\MYCLOUDPR4100\Public\reddit\subreddits23\BrightonHoveAlbion_comments.zst",
+# IMPORTANT SETUP INSTRUCTIONS
+# change the folder line to the folder where the files are stored
+# change the subreddits to the list of subreddits, one per line. The case must exactly match, ie, for r/AskReddit, put "AskReddit"
+# the files in the folder must match the format from the torrent, subreddit_type.zst, like AskReddit_comments.zst
+# the script will look for both comments and submissions files for each subreddit
+folder = r"\\MYCLOUDPR4100\Public\reddit\subreddits23"
+subreddits = [
+	"DPH",
+	"dxm",
 ]
 ignored_users = {'[deleted]', 'automoderator'}
+# this is a list of users to ignore when doing the comparison. Most popular bots post in many subreddits and aren't the person you're looking for
+# here's a good start, but add bots to your list as you encounter them https://github.com/Watchful1/PushshiftDumps/blob/master/scripts/ignored.txt
 ignored_users_file = "ignored.txt"
 min_comments_per_sub = 1
 file_name = "users.txt"
@@ -66,35 +73,61 @@ def read_lines_zst(file_name):
 		reader.close()
 
 
+def get_commenters_from_file(subreddit_file, subreddit_commenters, total_lines):
+	file_lines = 0
+	created = None
+	file_size = os.stat(subreddit_file).st_size
+	for line, file_bytes_processed in read_lines_zst(subreddit_file):
+		total_lines += 1
+		file_lines += 1
+		if total_lines % 100000 == 0:
+			log.info(f"{total_lines:,}: {subreddit_file}: {created.strftime('%Y-%m-%d %H:%M:%S')} : {file_lines:,} : {(file_bytes_processed / file_size) * 100:.0f}%")
+
+		try:
+			obj = json.loads(line)
+			created = datetime.utcfromtimestamp(int(obj['created_utc']))
+
+			if obj['author'].lower() not in ignored_users:
+				subreddit_commenters[obj['author']] += 1
+		except (KeyError, json.JSONDecodeError) as err:
+			pass
+	log.info(f"{total_lines:,}: {subreddit_file}: {created.strftime('%Y-%m-%d %H:%M:%S')} : {file_lines:,} : 100%")
+	return total_lines
+
+
 if __name__ == "__main__":
+	log.info(f"Subreddit's folder: {folder}")
+	if len(subreddits) <= 10:
+		log.info(f"Finding overlapping users in {', '.join(subreddits)}")
+	else:
+		log.info(f"Finding overlapping users in {len(subreddits)} subreddits")
+	if require_first_subreddit:
+		log.info(f"Finding users from the first subreddit that are in any of the other subreddits")
+	log.info(f"Minimum comments per subreddit set to {min_comments_per_sub}")
+	log.info(f"Outputting to {file_name}")
+
 	if os.path.exists(ignored_users_file):
 		with open(ignored_users_file) as fh:
 			for user in fh.readlines():
 				ignored_users.add(user.strip().lower())
+		log.info(f"Loaded {len(ignored_users)} ignored users from {ignored_users_file}")
 
 	commenterSubreddits = defaultdict(int)
 	is_first = True
 	total_lines = 0
-	for subreddit_file in input_files:
-		file_lines = 0
-		created = None
-		file_size = os.stat(subreddit_file).st_size
+	for subreddit in subreddits:
+		subreddit_exists = False
 		commenters = defaultdict(int)
-		for line, file_bytes_processed in read_lines_zst(subreddit_file):
-			total_lines += 1
-			file_lines += 1
-			if total_lines % 100000 == 0:
-				log.info(f"{total_lines:,}: {subreddit_file}: {created.strftime('%Y-%m-%d %H:%M:%S')} : {file_lines:,} : {(file_bytes_processed / file_size) * 100:.0f}%")
-
-			try:
-				obj = json.loads(line)
-				created = datetime.utcfromtimestamp(int(obj['created_utc']))
-
-				if obj['author'].lower() not in ignored_users:
-					commenters[obj['author']] += 1
-			except (KeyError, json.JSONDecodeError) as err:
-				pass
-		log.info(f"{total_lines:,}: {subreddit_file}: {created.strftime('%Y-%m-%d %H:%M:%S')} : {file_lines:,} : 100%")
+		for file_type in ["submissions", "comments"]:
+			subreddit_file = os.path.join(folder, f"{subreddit}_{file_type}.zst")
+			if not os.path.exists(subreddit_file):
+				log.info(f"{file_type} for {subreddit} does not exist, skipping")
+				continue
+			subreddit_exists = True
+			total_lines = get_commenters_from_file(subreddit_file, commenters, total_lines)
+		if not subreddit_exists:
+			log.error(f"Subreddit {subreddit} has no files, aborting")
+			sys.exit(0)
 
 		for commenter in commenters:
 			if require_first_subreddit and not is_first and commenter not in commenterSubreddits:
@@ -106,48 +139,31 @@ if __name__ == "__main__":
 	if require_first_subreddit:
 		count_found = 0
 		with open(file_name, 'w') as txt:
-			txt.write(f"Commenters in r/{input_files[0]} and at least one of r/{(', '.join(input_files))}\n")
+			txt.write(f"Commenters in r/{subreddits[0]} and at least one of {(', '.join(subreddits))}\n")
 			for commenter, countSubreddits in commenterSubreddits.items():
 				if countSubreddits >= 2:
 					count_found += 1
 					txt.write(f"{commenter}\n")
-		log.info(f"{count_found} commenters in r/{input_files[0]} and at least one of r/{(', '.join(input_files))}")
+		log.info(f"{count_found} commenters in r/{subreddits[0]} and at least one of {(', '.join(subreddits))}")
 
 	else:
 		sharedCommenters = defaultdict(list)
 		for commenter, countSubreddits in commenterSubreddits.items():
-			if countSubreddits >= len(input_files) - 2:
+			if countSubreddits >= 2:
 				sharedCommenters[countSubreddits].append(commenter)
 
-		commentersAll = len(sharedCommenters[len(input_files)])
-		commentersMinusOne = len(sharedCommenters[len(input_files) - 1])
-		commentersMinusTwo = len(sharedCommenters[len(input_files) - 2])
-
-		log.info(f"{commentersAll} commenters in all subreddits, {commentersMinusOne} in all but one, {commentersMinusTwo} in all but 2. Writing output to {file_name}")
-
 		with open(file_name, 'w') as txt:
-			if commentersAll == 0:
-				txt.write(f"No commenters in all subreddits\n")
-			else:
-				txt.write(f"{commentersAll} commenters in all subreddits\n")
-				for user in sorted(sharedCommenters[len(input_files)], key=str.lower):
-					txt.write(f"{user}\n")
-			txt.write("\n")
-
-			if commentersAll < 10 and len(input_files) > 2:
-				if commentersMinusOne == 0:
-					txt.write(f"No commenters in all but one subreddits\n")
+			log.info(f"Writing output to {file_name}")
+			for i in range(len(subreddits)):
+				commenters = len(sharedCommenters[len(subreddits) - i])
+				inner_str = f"but {i} " if i != 0 else ""
+				log.info(f"{commenters} commenters in all {inner_str}subreddits")
+				if commenters == 0:
+					txt.write(f"No commenters in all {inner_str}subreddits\n")
 				else:
-					txt.write(f"{commentersMinusOne} commenters in all but one subreddits\n")
-					for user in sorted(sharedCommenters[len(input_files) - 1], key=str.lower):
+					txt.write(f"{commenters} commenters in all {inner_str}subreddits\n")
+					for user in sorted(sharedCommenters[len(subreddits) - i], key=str.lower):
 						txt.write(f"{user}\n")
 				txt.write("\n")
-
-				if commentersMinusOne < 10:
-					if commentersMinusTwo == 0:
-						txt.write(f"No commenters in all but two subreddits\n")
-					else:
-						txt.write(f"{commentersMinusTwo} commenters in all but two subreddits\n")
-						for user in sorted(sharedCommenters[len(input_files) - 2], key=str.lower):
-							txt.write(f"{user}\n")
-					txt.write("\n")
+				if commenters > 3:
+					break
