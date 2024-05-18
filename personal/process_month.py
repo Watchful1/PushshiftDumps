@@ -1,6 +1,7 @@
 import sys
 sys.path.append('personal')
 sys.path.append('combine')
+sys.path.append('personal/combine')
 
 import os
 import argparse
