@@ -15,7 +15,7 @@ import logging.handlers
 
 sys.path.append('personal')
 
-log = discord_logging.init_logging(debug=False)
+log = discord_logging.get_logger(init=True)
 
 import utils
 import classes
@@ -25,6 +25,18 @@ from merge import ObjectType
 
 NEWLINE_ENCODED = "\n".encode('utf-8')
 reg = re.compile(r"\d\d-\d\d-\d\d_\d\d-\d\d")
+
+
+def get_pushshift_token(old_token):
+	saved_token = load_pushshift_token()
+	if saved_token is None or old_token == saved_token:
+		log.info(f"Requesting new token")
+		result_token = re_auth_pushshift(old_token)
+		save_pushshift_token(result_token)
+	else:
+		result_token = saved_token
+
+	return result_token
 
 
 def save_pushshift_token(token):
@@ -66,7 +78,7 @@ def re_auth_pushshift(old_token):
 		sys.exit(1)
 
 
-def query_pushshift(ids, bearer, object_type):
+def query_pushshift(ids, bearer, object_type, pushshift_token_function):
 	object_name = "comment" if object_type == ObjectType.COMMENT else "submission"
 	url = f"https://api.pushshift.io/reddit/{object_name}/search?limit=1000&ids={','.join(ids)}"
 	log.debug(f"pushshift query: {url}")
@@ -87,7 +99,7 @@ def query_pushshift(ids, bearer, object_type):
 			log.warning(f"Pushshift 403, trying reauth: {response.json()}")
 			log.warning(url)
 			log.warning(f"'Authorization': Bearer {bearer}")
-			bearer = re_auth_pushshift(bearer)
+			bearer = pushshift_token_function(bearer)
 		time.sleep(2)
 	if response.status_code != 200:
 		log.warning(f"4 requests failed with status code {response.status_code}")
@@ -112,11 +124,11 @@ def end_of_day(input_minute):
 	return input_minute.replace(hour=0, minute=0, second=0) + timedelta(days=1)
 
 
-def build_day(day_to_process, input_folders, output_folder, object_type, reddit, ignore_ids):
-	pushshift_token = load_pushshift_token()
-	log.info(f"Using pushshift token: {pushshift_token}")
-
+def build_day(day_to_process, input_folders, output_folder, object_type, reddit, ignore_ids, pushshift_token_function):
 	file_type = "comments" if object_type == ObjectType.COMMENT else "submissions"
+
+	pushshift_token = pushshift_token_function(None)
+	log.info(f"{file_type}: Using pushshift token: {pushshift_token}")
 
 	file_minutes = {}
 	minute_iterator = day_to_process - timedelta(minutes=2)
@@ -131,7 +143,7 @@ def build_day(day_to_process, input_folders, output_folder, object_type, reddit,
 			for file in os.listdir(merge_date_folder):
 				match = reg.search(file)
 				if not match:
-					log.info(f"File doesn't match regex: {file}")
+					log.info(f"{file_type}: File doesn't match regex: {file}")
 					continue
 				file_date = datetime.strptime(match.group(), '%y-%m-%d_%H-%M')
 				if file_date in file_minutes:
@@ -147,7 +159,7 @@ def build_day(day_to_process, input_folders, output_folder, object_type, reddit,
 			for obj in utils.read_obj_zst(ingest_file):
 				if objects.add_object(obj, ingest_type):
 					unmatched_field = True
-		log.info(f"Loaded {minute_iterator.strftime('%y-%m-%d_%H-%M')} : {objects.get_counts_string_by_minute(minute_iterator, [IngestType.INGEST, IngestType.RESCAN, IngestType.DOWNLOAD])}")
+		log.info(f"{file_type}: Loaded {minute_iterator.strftime('%y-%m-%d_%H-%M')} : {objects.get_counts_string_by_minute(minute_iterator, [IngestType.INGEST, IngestType.RESCAN, IngestType.DOWNLOAD])}")
 
 		if minute_iterator >= end_time or objects.count_minutes() >= 11:
 			if minute_iterator > last_minute_of_day:
@@ -156,11 +168,11 @@ def build_day(day_to_process, input_folders, output_folder, object_type, reddit,
 				working_highest_minute = minute_iterator - timedelta(minutes=1)
 			missing_ids, start_id, end_id = objects.get_missing_ids_by_minutes(working_lowest_minute, working_highest_minute, ignore_ids)
 			log.debug(
-				f"Backfilling from: {working_lowest_minute.strftime('%y-%m-%d_%H-%M')} ({utils.base36encode(start_id)}|{start_id}) to "
+				f"{file_type}: Backfilling from: {working_lowest_minute.strftime('%y-%m-%d_%H-%M')} ({utils.base36encode(start_id)}|{start_id}) to "
 				f"{working_highest_minute.strftime('%y-%m-%d_%H-%M')} ({utils.base36encode(end_id)}|{end_id}) with {len(missing_ids)} ({end_id - start_id}) ids")
 
 			for chunk in utils.chunk_list(missing_ids, 50):
-				pushshift_objects, pushshift_token = query_pushshift(chunk, pushshift_token, object_type)
+				pushshift_objects, pushshift_token = query_pushshift(chunk, pushshift_token, object_type, pushshift_token_function)
 				for pushshift_object in pushshift_objects:
 					if objects.add_object(pushshift_object, IngestType.PUSHSHIFT):
 						unmatched_field = True
@@ -188,7 +200,7 @@ def build_day(day_to_process, input_folders, output_folder, object_type, reddit,
 					output_handle.write(NEWLINE_ENCODED)
 					objects.delete_object_id(obj['id'])
 				log.info(
-					f"Wrote up to {working_lowest_minute.strftime('%y-%m-%d_%H-%M')} : "
+					f"{file_type}: Wrote up to {working_lowest_minute.strftime('%y-%m-%d_%H-%M')} : "
 					f"{objects.get_counts_string_by_minute(working_lowest_minute, [IngestType.PUSHSHIFT, IngestType.BACKFILL, IngestType.MISSING])}")
 				output_handle.close()
 				working_lowest_minute += timedelta(minutes=1)
@@ -197,13 +209,20 @@ def build_day(day_to_process, input_folders, output_folder, object_type, reddit,
 
 		discord_logging.flush_discord()
 		if unmatched_field:
-			log.warning(f"Unmatched field, aborting")
+			log.warning(f"{file_type}: Unmatched field, aborting")
 			discord_logging.flush_discord()
 			sys.exit(1)
 
 		minute_iterator += timedelta(minutes=1)
 
-	log.info(f"Finished day {day_to_process.strftime('%y-%m-%d')}: {objects.get_counts_string()}")
+	log.info(f"{file_type}: Finished day {day_to_process.strftime('%y-%m-%d')}: {objects.get_counts_string()}")
+
+
+def merge_and_backfill(start_date, end_date, input_folders, output_folder, object_type, ignore_ids, reddit_username, pushshift_token_function):
+	reddit = praw.Reddit(reddit_username)
+	while start_date <= end_date:
+		build_day(start_date, input_folders, output_folder, object_type, reddit, ignore_ids, pushshift_token_function)
+		start_date = end_of_day(start_date)
 
 
 if __name__ == "__main__":
@@ -254,19 +273,22 @@ if __name__ == "__main__":
 			start_id, end_id = id_range.split("-")
 			ignore_ids.append((utils.base36decode(start_id), utils.base36decode(end_id)))
 
-	user_name = "Watchful12"
-	reddit = praw.Reddit(user_name)
-
 	discord_logging.init_discord_logging(
-		section_name=None,
-		log_level=logging.WARNING,
-		logging_webhook=reddit.config.custom["logging_webhook"]
+		section_name="Watchful12",
+		log_level=logging.WARNING
 	)
 
 	if args.pushshift is not None:
 		log.warning(f"Saving pushshift token: {args.pushshift}")
 		save_pushshift_token(args.pushshift)
 
-	while start_date <= end_date:
-		build_day(start_date, input_folders, args.output, object_type, reddit, ignore_ids)
-		start_date = end_of_day(start_date)
+	merge_and_backfill(
+		start_date,
+		end_date,
+		input_folders,
+		args.output,
+		object_type,
+		ignore_ids,
+		"Watchful12",
+		get_pushshift_token
+	)

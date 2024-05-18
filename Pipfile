@@ -11,6 +11,7 @@ pymongo = {extras = ["srv"], version = "*"}
 scipy = "*"
 sortedcontainers = "*"
 praw = "*"
+multiprocessing-logging = "*"
 
 [dev-packages]
 

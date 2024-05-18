@@ -14,6 +14,13 @@ import json
 # the script will look for both comments and submissions files for each subreddit
 folder = r"\\MYCLOUDPR4100\Public\reddit\subreddits23"
 subreddits = [
+	"aquarium",
+	"opiates",
+	"axolotls",
+	"piercing",
+	"titanfolk",
+	"AskOuija",
+	"piercing",
 	"DPH",
 	"dxm",
 ]

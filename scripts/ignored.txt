@@ -123,3 +123,9 @@ SuicideAwarenessBot
 thebenshapirobot
 these_days_bot
 totes_meta_bot
+aardBot
+gifv-bot
+I_Love_You-BOT
+imdad_bot
+metric_units
+YoUaReSoHiLaRiOuS

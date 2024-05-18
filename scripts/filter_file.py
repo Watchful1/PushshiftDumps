@@ -7,7 +7,7 @@ from datetime import datetime
 import logging.handlers
 
 # put the path to the input file, or a folder of files to process all of
-input_file = r"\\MYCLOUDPR4100\Public\askreddit_comments.zst"
+input_file = r"\\MYCLOUDPR4100\Public\reddit\subreddits23\wallstreetbets_submissions.zst"
 # put the name or path to the output file. The file extension from below will be added automatically. If the input file is a folder, the output will be treated as a folder as well
 output_file = r"\\MYCLOUDPR4100\Public\output"
 # the format to output in, pick from the following options
@@ -29,7 +29,7 @@ write_bad_lines = True
 
 # only output items between these two dates
 from_date = datetime.strptime("2005-01-01", "%Y-%m-%d")
-to_date = datetime.strptime("2025-12-31", "%Y-%m-%d")
+to_date = datetime.strptime("2030-12-31", "%Y-%m-%d")
 
 # the field to filter on, the values to filter with and whether it should be an exact match
 # some examples:
@@ -75,6 +75,7 @@ to_date = datetime.strptime("2025-12-31", "%Y-%m-%d")
 # run the script one last time and now you have a file called "filtered_comments.csv" that only has comments from your submissions above
 # if you want only top level comments instead of all comments, you can set field to "parent_id" instead of "link_id"
 
+# change this to field = None if you don't want to filter by anything
 field = "body"
 values = ['']
 # if you have a long list of values, you can put them in a file and put the filename here. If set this overrides the value list above
