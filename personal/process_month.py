@@ -212,6 +212,7 @@ def process(queue, base_folder, month, file_type, type_stages, reddit_username, 
 		# 	log.info(f"{file_type} {stage}: {status}")
 	except Exception as err:
 		queue.put((file_type, "error", str(err)))
+		discord_logging.flush_discord()
 		# for stage, status in type_stages.items():
 		# 	log.info(f"{file_type} {stage}: {status}")
 
@@ -258,4 +259,5 @@ if __name__ == "__main__":
 				log.error(f"Error in {file_type}: {status}")
 			stages[file_type][stage] = status
 			save_status(status_file, stages, month)
+			discord_logging.flush_discord()
 			#log.info(f"workers {workers.ready()} : queue {queue.empty()}")
