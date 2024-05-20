@@ -176,7 +176,7 @@ def process(queue, base_folder, month, file_type, type_stages, reddit_username, 
 				log.info(f"{file_type}: Reading from: {input_folder[0]} : {input_folder[1]}")
 			combined_folder = os.path.join(base_folder, "ingest", "combined")
 			log.info(f"{file_type}: Writing to: {combined_folder}")
-			while start_date <= end_date:
+			while start_date < end_date:
 				build_day(
 					start_date,
 					input_folders,
@@ -192,12 +192,13 @@ def process(queue, base_folder, month, file_type, type_stages, reddit_username, 
 
 		if not type_stages["build"]:
 			log.info(f"{file_type}: Starting {file_type} build")
+			start_date = datetime.strptime(month, "%y-%m")
 
 			input_folder = os.path.join(base_folder, "ingest", "combined")
 			log.info(f"{file_type}: Reading from: {input_folder}")
 			log.info(f"{file_type}: Writing to: {base_folder}")
 			build_month.build_month(
-				month,
+				start_date,
 				input_folder,
 				base_folder,
 				file_type,
