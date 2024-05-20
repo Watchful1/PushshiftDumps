@@ -201,7 +201,7 @@ def process(queue, base_folder, month, file_type, type_stages, reddit_username, 
 				start_date,
 				input_folder,
 				base_folder,
-				file_type,
+				file_type+"s",
 				compression_level
 			)
 			queue.put((file_type, "build", True))

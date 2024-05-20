@@ -28,9 +28,9 @@ reg = re.compile(r"\d\d-\d\d-\d\d_\d\d-\d\d")
 
 
 def build_month(month, input_folder, output_folder, file_type, compression_level):
-	if args.type == "comment":
+	if file_type == "comments":
 		prefix = "RC"
-	elif args.type == "submission":
+	elif file_type == "submissions":
 		prefix = "RS"
 	else:
 		log.error(f"Invalid type: {args.type}")
