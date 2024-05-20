@@ -245,6 +245,8 @@ if __name__ == "__main__":
 		sys.exit(0)
 	month = args.month
 	log.info(f"Processing {month}")
+	level = int(args.level)
+	log.info(f"Compression level: {level}")
 
 	multiprocessing.set_start_method('spawn')
 	queue = multiprocessing.Manager().Queue()
@@ -252,7 +254,7 @@ if __name__ == "__main__":
 	with multiprocessing.Pool(processes=2, initializer=init, initargs=(p_lock,)) as pool:
 		arguments = []
 		for file_type, type_stages in stages.items():
-			arguments.append((queue, args.folder, month, file_type, type_stages, "Watchful12", args.level, ignore_ids))
+			arguments.append((queue, args.folder, month, file_type, type_stages, "Watchful12", level, ignore_ids))
 		workers = pool.starmap_async(process, arguments, chunksize=1, error_callback=log.info)
 		while not workers.ready() or not queue.empty():
 			file_type, stage, status = queue.get()
