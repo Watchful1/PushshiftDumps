@@ -195,12 +195,13 @@ def process(queue, base_folder, month, file_type, type_stages, reddit_username, 
 			start_date = datetime.strptime(month, "%y-%m")
 
 			input_folder = os.path.join(base_folder, "ingest", "combined")
+			output_folder = os.path.join(base_folder, "reddit")
 			log.info(f"{file_type}: Reading from: {input_folder}")
-			log.info(f"{file_type}: Writing to: {base_folder}")
+			log.info(f"{file_type}: Writing to: {output_folder}")
 			build_month.build_month(
 				start_date,
 				input_folder,
-				base_folder,
+				output_folder,
 				file_type+"s",
 				compression_level
 			)
