@@ -28,6 +28,14 @@ reg = re.compile(r"\d\d-\d\d-\d\d_\d\d-\d\d")
 
 
 def build_month(month, input_folder, output_folder, file_type, compression_level):
+	if args.type == "comment":
+		prefix = "RC"
+	elif args.type == "submission":
+		prefix = "RS"
+	else:
+		log.error(f"Invalid type: {args.type}")
+		sys.exit(2)
+
 	total_objects = 0
 	total_bytes = 0
 	minute_iterator = month
@@ -98,15 +106,6 @@ if __name__ == "__main__":
 	log.info(f"Output folder: {args.output}")
 	log.info(f"Month: {args.month}")
 	log.info(f"Compression level: {level}")
-
-	prefix = None
-	if args.type == "comments":
-		prefix = "RC"
-	elif args.type == "submissions":
-		prefix = "RS"
-	else:
-		log.error(f"Invalid type: {args.type}")
-		sys.exit(2)
 
 	build_month(
 		month,
