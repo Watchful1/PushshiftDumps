@@ -276,7 +276,7 @@ def process_file(file, queue, field, values, partial, regex, split_intermediate)
 				if matched:
 					output_handle.write_line(line, observed)
 					file.lines_matched += 1
-			except (KeyError, json.JSONDecodeError) as err:
+			except (KeyError, json.JSONDecodeError, AttributeError) as err:
 				file.error_lines += 1
 			file.lines_processed += 1
 			if file.lines_processed % 1000000 == 0:
