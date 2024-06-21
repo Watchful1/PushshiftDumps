@@ -14,15 +14,8 @@ import json
 # the script will look for both comments and submissions files for each subreddit
 folder = r"\\MYCLOUDPR4100\Public\reddit\subreddits23"
 subreddits = [
-	"aquarium",
-	"opiates",
-	"axolotls",
-	"piercing",
-	"titanfolk",
-	"AskOuija",
-	"piercing",
-	"DPH",
-	"dxm",
+	"JEENEETards",
+	"TwoXIndia",
 ]
 ignored_users = {'[deleted]', 'automoderator'}
 # this is a list of users to ignore when doing the comparison. Most popular bots post in many subreddits and aren't the person you're looking for
@@ -128,7 +121,7 @@ if __name__ == "__main__":
 		for file_type in ["submissions", "comments"]:
 			subreddit_file = os.path.join(folder, f"{subreddit}_{file_type}.zst")
 			if not os.path.exists(subreddit_file):
-				log.info(f"{file_type} for {subreddit} does not exist, skipping")
+				log.info(f"{file_type} for {subreddit} does not exist, skipping: {subreddit_file}")
 				continue
 			subreddit_exists = True
 			total_lines = get_commenters_from_file(subreddit_file, commenters, total_lines)
