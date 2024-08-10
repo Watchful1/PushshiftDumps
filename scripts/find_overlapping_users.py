@@ -12,7 +12,7 @@ import json
 # change the subreddits to the list of subreddits, one per line. The case must exactly match, ie, for r/AskReddit, put "AskReddit"
 # the files in the folder must match the format from the torrent, subreddit_type.zst, like AskReddit_comments.zst
 # the script will look for both comments and submissions files for each subreddit
-folder = r"\\MYCLOUDPR4100\Public\reddit\subreddits23"
+folder = r"C:\Users\user\Downloads"
 subreddits = [
 	"JEENEETards",
 	"TwoXIndia",
@@ -97,6 +97,9 @@ def get_commenters_from_file(subreddit_file, subreddit_commenters, total_lines):
 
 if __name__ == "__main__":
 	log.info(f"Subreddit's folder: {folder}")
+	if not os.path.exists(folder):
+		log.error(f"Subreddit's folder either doesn't exist or the script doesn't have access to it: {folder}")
+		sys.exit()
 	if len(subreddits) <= 10:
 		log.info(f"Finding overlapping users in {', '.join(subreddits)}")
 	else:
@@ -127,6 +130,8 @@ if __name__ == "__main__":
 			total_lines = get_commenters_from_file(subreddit_file, commenters, total_lines)
 		if not subreddit_exists:
 			log.error(f"Subreddit {subreddit} has no files, aborting")
+			file_count = len(list(os.listdir(folder)))
+			log.error(f"The script can see {file_count} files in the folder, but not the ones requested: {folder}")
 			sys.exit(0)
 
 		for commenter in commenters:
