@@ -151,7 +151,8 @@ def process(queue, base_folder, month, file_type, type_stages, reddit_username, 
 			log.info(f"{file_type}: Writing to: {split_folder}")
 			split_blocks_by_minutes.split_by_minutes(split_file, split_folder)
 
-			log.info(f"{file_type}: {file_type} split complete")
+			log.warning(f"{file_type}: {file_type} split complete")
+			discord_logging.flush_discord()
 			queue.put((file_type, "split", True))
 
 		start_date = datetime.strptime(month, "%y-%m")
@@ -188,7 +189,8 @@ def process(queue, base_folder, month, file_type, type_stages, reddit_username, 
 				)
 				start_date = end_of_day(start_date)
 				queue.put((file_type, "merge", start_date))
-			log.info(f"{file_type}: {file_type} merge complete")
+			log.warning(f"{file_type}: {file_type} merge complete")
+			discord_logging.flush_discord()
 
 		if not type_stages["build"]:
 			log.info(f"{file_type}: Starting {file_type} build")
@@ -206,9 +208,11 @@ def process(queue, base_folder, month, file_type, type_stages, reddit_username, 
 				compression_level
 			)
 			queue.put((file_type, "build", True))
-			log.info(f"{file_type}: {file_type} build complete")
+			log.warning(f"{file_type}: {file_type} build complete")
+			discord_logging.flush_discord()
 
-		log.info(f"{file_type}: {file_type} all steps complete")
+		log.warning(f"{file_type}: {file_type} all steps complete")
+		discord_logging.flush_discord()
 
 		# for stage, status in type_stages.items():
 		# 	log.info(f"{file_type} {stage}: {status}")

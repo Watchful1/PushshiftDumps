@@ -103,6 +103,7 @@ def query_pushshift(ids, bearer, object_type, pushshift_token_function):
 		time.sleep(2)
 	if response.status_code != 200:
 		log.warning(f"4 requests failed with status code {response.status_code}")
+		discord_logging.flush_discord()
 		sys.exit(1)
 	return response.json()['data'], bearer
 
