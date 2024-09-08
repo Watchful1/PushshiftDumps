@@ -136,7 +136,11 @@ def process(queue, base_folder, month, file_type, type_stages, reddit_username, 
 		# 	log.info(f"{file_type} {stage}: {status}")
 		file_prefix = "RC" if file_type == "comment" else "RS"
 		if not type_stages["split"]:
-			split_file = os.path.join(base_folder, "reddit", "blocks", f"{file_prefix}_20{month}.zst")
+			original_split_file = os.path.join(base_folder, "reddit", "blocks", f"{file_prefix}_20{month}.zst")
+			split_file = os.path.join(base_folder, "reddit", "blocks", f"{file_prefix}B_20{month}.zst")
+			if os.path.exists(original_split_file):
+				os.rename(original_split_file, split_file)
+
 			if not os.path.exists(split_file):
 				log.info(f"{file_type}: File {split_file} doesn't exist, checking for blocks")
 				split_file = os.path.join(base_folder, "reddit", "blocks", f"{file_prefix}_20{month}.zst_blocks")
