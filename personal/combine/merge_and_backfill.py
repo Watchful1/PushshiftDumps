@@ -103,10 +103,14 @@ def query_pushshift(ids, bearer, object_type, pushshift_token_function):
 		time.sleep(2)
 	if response is None:
 		log.warning(f"4 requests failed with no response")
+		log.warning(url)
+		log.warning(f"'Authorization': Bearer {bearer}")
 		discord_logging.flush_discord()
 		sys.exit(1)
 	if response.status_code != 200:
 		log.warning(f"4 requests failed with status code {response.status_code}")
+		log.warning(url)
+		log.warning(f"'Authorization': Bearer {bearer}")
 		discord_logging.flush_discord()
 		sys.exit(1)
 	return response.json()['data'], bearer
