@@ -248,6 +248,8 @@ if __name__ == "__main__":
 		section_name="Watchful12",
 		log_level=logging.WARNING,
 	)
+	log.warning("test")
+	discord_logging.flush_discord()
 
 	status_file = "process.json"
 	stages, month = load_status(status_file)
