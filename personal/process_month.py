@@ -16,7 +16,7 @@ import multiprocessing_logging
 import discord_logging
 import multiprocessing
 
-multiprocessing_logging.install_mp_handler()
+multiprocessing_logging.install_mp_handler("bot")
 log = discord_logging.init_logging()
 
 import utils
