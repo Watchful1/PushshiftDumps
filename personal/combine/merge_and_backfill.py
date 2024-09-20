@@ -83,13 +83,13 @@ def query_pushshift(ids, bearer, object_type, pushshift_token_function):
 	url = f"https://api.pushshift.io/reddit/{object_name}/search?limit=1000&ids={','.join(ids)}"
 	log.debug(f"pushshift query: {url}")
 	response = None
-	for i in range(4):
+	for i in range(10):
 		try:
 			response = requests.get(url, headers={
 				'User-Agent': "In script by /u/Watchful1",
-				'Authorization': f"Bearer {bearer}"}, timeout=15)
+				'Authorization': f"Bearer {bearer}"}, timeout=20)
 		except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
-			time.sleep(4 * i)
+			time.sleep(i)
 			continue
 		if response is None:
 			continue
@@ -100,7 +100,7 @@ def query_pushshift(ids, bearer, object_type, pushshift_token_function):
 			log.warning(url)
 			log.warning(f"'Authorization': Bearer {bearer}")
 			bearer = pushshift_token_function(bearer)
-		time.sleep(4 * i)
+		time.sleep(i)
 	if response is None:
 		log.warning(f"4 requests failed with no response")
 		log.warning(url)
