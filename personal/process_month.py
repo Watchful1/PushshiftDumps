@@ -17,7 +17,7 @@ import discord_logging
 import multiprocessing
 
 log = discord_logging.init_logging()
-multiprocessing_logging.install_mp_handler("bot")
+multiprocessing_logging.install_mp_handler(log)
 
 import utils
 from transform import split_blocks_by_minutes
