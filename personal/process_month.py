@@ -262,7 +262,7 @@ if __name__ == "__main__":
 	level = int(args.level)
 	log.info(f"Compression level: {level}")
 
-	multiprocessing.set_start_method('spawn')
+	multiprocessing.set_start_method('spawn', force=True)
 	queue = multiprocessing.Manager().Queue()
 	p_lock = multiprocessing.Lock()
 	with multiprocessing.Pool(processes=2, initializer=init, initargs=(p_lock,)) as pool:
