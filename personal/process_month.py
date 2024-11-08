@@ -17,6 +17,10 @@ import discord_logging
 import multiprocessing
 
 log = discord_logging.init_logging()
+discord_logging.init_discord_logging(
+	section_name="Watchful12",
+	log_level=logging.WARNING,
+)
 multiprocessing_logging.install_mp_handler(log)
 
 import utils
@@ -244,11 +248,7 @@ if __name__ == "__main__":
 			start_id, end_id = id_range.split("-")
 			ignore_ids.append((utils.base36decode(start_id), utils.base36decode(end_id)))
 
-	discord_logging.init_discord_logging(
-		section_name="Watchful12",
-		log_level=logging.WARNING,
-	)
-	log.warning("test")
+	log.warning(f"Processing {args.month}")
 	discord_logging.flush_discord()
 
 	status_file = "process.json"

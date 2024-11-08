@@ -12,11 +12,13 @@ import json
 # change the subreddits to the list of subreddits, one per line. The case must exactly match, ie, for r/AskReddit, put "AskReddit"
 # the files in the folder must match the format from the torrent, subreddit_type.zst, like AskReddit_comments.zst
 # the script will look for both comments and submissions files for each subreddit
-folder = r"C:\Users\user\Downloads"
+folder = r"\\MYCLOUDPR4100\Public\reddit\subreddits23"
 subreddits = [
-	"demolitionranch",
+	"phillies",
+	"EASportsFC",
+	"eagles",
 	"politics",
-	"pittsburgh",
+	"BucksCountyPA",
 ]
 ignored_users = {'[deleted]', 'automoderator'}
 # this is a list of users to ignore when doing the comparison. Most popular bots post in many subreddits and aren't the person you're looking for

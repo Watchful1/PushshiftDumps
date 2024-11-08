@@ -129,3 +129,5 @@ I_Love_You-BOT
 imdad_bot
 metric_units
 YoUaReSoHiLaRiOuS
+HIPPAbot
+VettedBot
