@@ -83,21 +83,20 @@ def query_pushshift(ids, bearer, object_type, pushshift_token_function):
 	url = f"https://api.pushshift.io/reddit/{object_name}/search?limit=1000&ids={','.join(ids)}"
 	log.debug(f"pushshift query: {url}")
 	response = None
-	attempts = 50
+	total_attempts = 50
+	current_attempt = 0
 	sleep_per_attempt = 10
-	for i in range(attempts):
+	for current_attempt in range(total_attempts):
 		try:
 			response = requests.get(url, headers={
 				'User-Agent': "In script by /u/Watchful1",
 				'Authorization': f"Bearer {bearer}"}, timeout=20)
-			if i > 0:
-				log.info(f"Pushshift call succeeded after {i} retries")
 		except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as err:
-			log.info(f"Pushshift failed, sleeping {i * sleep_per_attempt} : {err}")
+			log.info(f"Pushshift failed, sleeping {current_attempt * sleep_per_attempt} : {err}")
 			time.sleep(i * sleep_per_attempt)
 			continue
 		if response is None:
-			log.info(f"Pushshift failed, sleeping {i * sleep_per_attempt} : no response")
+			log.info(f"Pushshift failed, sleeping {current_attempt * sleep_per_attempt} : no response")
 			time.sleep(i * sleep_per_attempt)
 			continue
 		if response.status_code == 200:
@@ -107,20 +106,22 @@ def query_pushshift(ids, bearer, object_type, pushshift_token_function):
 			log.warning(url)
 			log.warning(f"'Authorization': Bearer {bearer}")
 			bearer = pushshift_token_function(bearer)
-		log.info(f"Pushshift failed, sleeping {i * sleep_per_attempt} : status {response.status_code}")
-		time.sleep(i * sleep_per_attempt)
+		log.info(f"Pushshift failed, sleeping {current_attempt * sleep_per_attempt} : status {response.status_code}")
+		time.sleep(current_attempt * sleep_per_attempt)
 	if response is None:
-		log.warning(f"{attempts} requests failed with no response")
+		log.warning(f"{current_attempt} requests failed with no response")
 		log.warning(url)
 		log.warning(f"'Authorization': Bearer {bearer}")
 		discord_logging.flush_discord()
 		sys.exit(1)
 	if response.status_code != 200:
-		log.warning(f"{attempts} requests failed with status code {response.status_code}")
+		log.warning(f"{current_attempt} requests failed with status code {response.status_code}")
 		log.warning(url)
 		log.warning(f"'Authorization': Bearer {bearer}")
 		discord_logging.flush_discord()
 		sys.exit(1)
+	if current_attempt > 0:
+		log.info(f"Pushshift call succeeded after {i} retries")
 	return response.json()['data'], bearer
 
 
