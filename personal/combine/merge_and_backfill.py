@@ -90,6 +90,8 @@ def query_pushshift(ids, bearer, object_type, pushshift_token_function):
 			response = requests.get(url, headers={
 				'User-Agent': "In script by /u/Watchful1",
 				'Authorization': f"Bearer {bearer}"}, timeout=20)
+			if i > 0:
+				log.info(f"Pushshift call succeeded after {i} retries")
 		except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
 			log.info(f"Pushshift failed, sleeping {i * sleep_per_attempt}")
 			time.sleep(i * sleep_per_attempt)
