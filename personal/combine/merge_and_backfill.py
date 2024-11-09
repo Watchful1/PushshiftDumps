@@ -83,7 +83,7 @@ def query_pushshift(ids, bearer, object_type, pushshift_token_function):
 	url = f"https://api.pushshift.io/reddit/{object_name}/search?limit=1000&ids={','.join(ids)}"
 	log.debug(f"pushshift query: {url}")
 	response = None
-	attempts = 20
+	attempts = 50
 	sleep_per_attempt = 10
 	for i in range(attempts):
 		try:
