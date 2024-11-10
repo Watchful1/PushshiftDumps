@@ -93,11 +93,11 @@ def query_pushshift(ids, bearer, object_type, pushshift_token_function):
 				'Authorization': f"Bearer {bearer}"}, timeout=20)
 		except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as err:
 			log.info(f"Pushshift failed, sleeping {current_attempt * sleep_per_attempt} : {err}")
-			time.sleep(i * sleep_per_attempt)
+			time.sleep(current_attempt * sleep_per_attempt)
 			continue
 		if response is None:
 			log.info(f"Pushshift failed, sleeping {current_attempt * sleep_per_attempt} : no response")
-			time.sleep(i * sleep_per_attempt)
+			time.sleep(current_attempt * sleep_per_attempt)
 			continue
 		if response.status_code == 200:
 			break
