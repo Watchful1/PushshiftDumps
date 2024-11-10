@@ -121,7 +121,7 @@ def query_pushshift(ids, bearer, object_type, pushshift_token_function):
 		discord_logging.flush_discord()
 		sys.exit(1)
 	if current_attempt > 0:
-		log.info(f"Pushshift call succeeded after {i} retries")
+		log.info(f"Pushshift call succeeded after {current_attempt} retries")
 	return response.json()['data'], bearer
 
 
