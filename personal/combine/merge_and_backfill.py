@@ -83,7 +83,7 @@ def query_pushshift(ids, bearer, object_type, pushshift_token_function):
 	url = f"https://api.pushshift.io/reddit/{object_name}/search?limit=1000&ids={','.join(ids)}"
 	log.debug(f"pushshift query: {url}")
 	response = None
-	total_attempts = 50
+	total_attempts = 100
 	current_attempt = 0
 	sleep_per_attempt = 10
 	for current_attempt in range(total_attempts):
@@ -109,19 +109,19 @@ def query_pushshift(ids, bearer, object_type, pushshift_token_function):
 		log.info(f"Pushshift failed, sleeping {current_attempt * sleep_per_attempt} : status {response.status_code}")
 		time.sleep(current_attempt * sleep_per_attempt)
 	if response is None:
-		log.warning(f"{current_attempt} requests failed with no response")
+		log.warning(f"{current_attempt + 1} requests failed with no response")
 		log.warning(url)
 		log.warning(f"'Authorization': Bearer {bearer}")
 		discord_logging.flush_discord()
 		sys.exit(1)
 	if response.status_code != 200:
-		log.warning(f"{current_attempt} requests failed with status code {response.status_code}")
+		log.warning(f"{current_attempt + 1} requests failed with status code {response.status_code}")
 		log.warning(url)
 		log.warning(f"'Authorization': Bearer {bearer}")
 		discord_logging.flush_discord()
 		sys.exit(1)
 	if current_attempt > 0:
-		log.info(f"Pushshift call succeeded after {current_attempt} retries")
+		log.info(f"Pushshift call succeeded after {current_attempt + 1} retries")
 	return response.json()['data'], bearer
 
 
