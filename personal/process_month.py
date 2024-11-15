@@ -222,7 +222,7 @@ def process(queue, base_folder, month, file_type, type_stages, reddit_username, 
 
 		log.warning(f"{file_type}: {file_type} all steps complete")
 
-		log.info(f'torrenttools create -a "https://academictorrents.com/announce.php" -c "Reddit comments and submissions from {month}" --include ".*(comments|submissions).*R._{month}.zst$" -o reddit_{month}.torrent reddit')
+		log.info(f'torrenttools create -a "https://academictorrents.com/announce.php" -c "Reddit comments and submissions from 20{month}" --include ".*(comments|submissions).*R._20{month}.zst$" -o reddit_20{month}.torrent reddit')
 
 		discord_logging.flush_discord()
 
