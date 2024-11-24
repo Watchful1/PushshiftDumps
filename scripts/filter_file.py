@@ -126,7 +126,7 @@ def write_line_csv(writer, obj, is_submission):
 	if 'permalink' in obj:
 		output_list.append(f"https://www.reddit.com{obj['permalink']}")
 	else:
-		output_list.append("No link available")
+		output_list.append(f"https://www.reddit.com/r/{obj['subreddit']}/comments/{obj['link_id'][3:]}/_/{obj['id']}")
 	if is_submission:
 		if obj['is_self']:
 			if 'selftext' in obj:
