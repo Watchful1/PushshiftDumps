@@ -285,4 +285,8 @@ if __name__ == "__main__":
 		input_files.append((input_file, output_file))
 	log.info(f"Processing {len(input_files)} files")
 	for file_in, file_out in input_files:
-		process_file(file_in, file_out, output_format, field, values, from_date, to_date, single_field, exact_match)
+		try:
+			process_file(file_in, file_out, output_format, field, values, from_date, to_date, single_field, exact_match)
+		except Exception as err:
+			log.warning(f"Error processing {file_in}: {err}")
+			log.warning(traceback.format_exc())
