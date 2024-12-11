@@ -281,3 +281,4 @@ if __name__ == "__main__":
 			save_status(status_file, stages, month)
 			discord_logging.flush_discord()
 			#log.info(f"workers {workers.ready()} : queue {queue.empty()}")
+	discord_logging.flush_discord()
