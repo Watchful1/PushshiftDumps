@@ -309,6 +309,8 @@ if __name__ == '__main__':
 
 		log.info(f"Processing complete, combining {len(input_files)} result files")
 
+		if not os.path.exists(args.monthly_count_folder):
+			os.makedirs(args.monthly_count_folder)
 		input_lines = 0
 		files_counted = 0
 		monthly_count_folder_paths = []
