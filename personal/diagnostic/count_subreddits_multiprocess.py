@@ -315,9 +315,11 @@ if __name__ == '__main__':
 				input_lines += 1
 				field_counts[line.strip()] += 1
 
+	sorted_counts = sorted(field_counts.items(), key=lambda item: item[1], reverse=True)
+
 	output_counts = 0
 	with open(f"{args.output}.txt", 'w') as output_handle:
-		for field, count in field_counts.items():
+		for field, count in sorted_counts:
 			if count >= args.min_count:
 				output_counts += 1
 				output_handle.write(f"{field}	{count}\n")
