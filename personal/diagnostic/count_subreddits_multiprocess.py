@@ -159,7 +159,7 @@ if __name__ == '__main__':
 	parser.add_argument("--output", help="Name of the output file", default="field_counts")
 	parser.add_argument("--working", help="The folder to store temporary files in", default="pushshift_working")
 	parser.add_argument("--field", help="Which field to count", default="subreddit")
-	parser.add_argument("--min_count", help="Dont write any counts below this number", default=1000)
+	parser.add_argument("--min_count", help="Dont write any counts below this number", default=1000, type=int)
 	parser.add_argument("--processes", help="Number of processes to use", default=10, type=int)
 	parser.add_argument("--file_filter", help="Regex filenames have to match to be processed", default="^rc_|rs_")
 	parser.add_argument(
