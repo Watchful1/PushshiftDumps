@@ -199,6 +199,7 @@ if __name__ == '__main__':
 	log.info(f"Processed {files_processed} of {len(input_files)} files with {(total_bytes_processed / (2**30)):.2f} of {(total_bytes / (2**30)):.2f} gigabytes")
 
 	start_time = time.time()
+	last_log_time = None
 	if len(files_to_process):
 		progress_queue = Queue(40)
 		progress_queue.put([start_time, total_lines_processed, total_bytes_processed])
@@ -213,42 +214,44 @@ if __name__ == '__main__':
 				file_update = queue.get()
 				if file_update.error_message is not None:
 					log.warning(f"File failed {file_update.input_path}: {file_update.error_message}")
-				# I'm going to assume that the list of files is short enough that it's no
-				# big deal to just iterate each time since that saves a bunch of work
-				total_lines_processed = 0
-				total_bytes_processed = 0
-				total_lines_errored = 0
-				files_processed = 0
-				files_errored = 0
-				i = 0
-				for file in input_files:
-					if file.input_path == file_update.input_path:
-						input_files[i] = file_update
-						file = file_update
-					total_lines_processed += file.lines_processed
-					total_bytes_processed += file.bytes_processed
-					total_lines_errored += file.error_lines
-					files_processed += 1 if file.complete or file.error_message is not None else 0
-					files_errored += 1 if file.error_message is not None else 0
-					i += 1
-				if file_update.complete or file_update.error_message is not None:
-					save_file_list(input_files, status_json, script_type)
 				current_time = time.time()
-				progress_queue.put([current_time, total_lines_processed, total_bytes_processed])
+				if last_log_time is None or (current_time - last_log_time) > 5 or queue.empty():
+					# I'm going to assume that the list of files is short enough that it's no
+					# big deal to just iterate each time since that saves a bunch of work
+					total_lines_processed = 0
+					total_bytes_processed = 0
+					total_lines_errored = 0
+					files_processed = 0
+					files_errored = 0
+					i = 0
+					for file in input_files:
+						if file.input_path == file_update.input_path:
+							input_files[i] = file_update
+							file = file_update
+						total_lines_processed += file.lines_processed
+						total_bytes_processed += file.bytes_processed
+						total_lines_errored += file.error_lines
+						files_processed += 1 if file.complete or file.error_message is not None else 0
+						files_errored += 1 if file.error_message is not None else 0
+						i += 1
+					if file_update.complete or file_update.error_message is not None:
+						save_file_list(input_files, status_json, script_type)
+					progress_queue.put([current_time, total_lines_processed, total_bytes_processed])
 
-				first_time, first_lines, first_bytes = progress_queue.peek()
-				bytes_per_second = int((total_bytes_processed - first_bytes)/(current_time - first_time))
-				speed_queue.put(bytes_per_second)
-				seconds_left = int((total_bytes - total_bytes_processed) / int(sum(speed_queue.list) / len(speed_queue.list)))
-				minutes_left = int(seconds_left / 60)
-				hours_left = int(minutes_left / 60)
-				days_left = int(hours_left / 24)
+					first_time, first_lines, first_bytes = progress_queue.peek()
+					bytes_per_second = int((total_bytes_processed - first_bytes)/(current_time - first_time))
+					speed_queue.put(bytes_per_second)
+					seconds_left = int((total_bytes - total_bytes_processed) / int(sum(speed_queue.list) / len(speed_queue.list)))
+					minutes_left = int(seconds_left / 60)
+					hours_left = int(minutes_left / 60)
+					days_left = int(hours_left / 24)
 
-				log.info(
-					f"{total_lines_processed:,} lines at {(total_lines_processed - first_lines)/(current_time - first_time):,.0f}/s, {total_lines_errored:,} errored : "
-					f"{(total_bytes_processed / (2**30)):.2f} gb at {(bytes_per_second / (2**20)):,.0f} mb/s, {(total_bytes_processed / total_bytes) * 100:.0f}% : "
-					f"{files_processed}({files_errored})/{len(input_files)} files : "
-					f"{(str(days_left) + 'd ' if days_left > 0 else '')}{hours_left - (days_left * 24)}:{minutes_left - (hours_left * 60):02}:{seconds_left - (minutes_left * 60):02} remaining")
+					log.info(
+						f"{total_lines_processed:,} lines at {(total_lines_processed - first_lines)/(current_time - first_time):,.0f}/s, {total_lines_errored:,} errored : "
+						f"{(total_bytes_processed / (2**30)):.2f} gb at {(bytes_per_second / (2**20)):,.0f} mb/s, {(total_bytes_processed / total_bytes) * 100:.0f}% : "
+						f"{files_processed}({files_errored})/{len(input_files)} files : "
+						f"{(str(days_left) + 'd ' if days_left > 0 else '')}{hours_left - (days_left * 24)}:{minutes_left - (hours_left * 60):02}:{seconds_left - (minutes_left * 60):02} remaining")
+					last_log_time = time.time()
 
 	log.info(f"{total_lines_processed:,}, {total_lines_errored} errored : {(total_bytes_processed / (2**30)):.2f} gb, {(total_bytes_processed / total_bytes) * 100:.0f}% : {files_processed}/{len(input_files)}")
 
