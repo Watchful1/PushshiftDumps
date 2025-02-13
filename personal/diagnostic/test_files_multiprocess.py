@@ -247,7 +247,8 @@ if __name__ == '__main__':
 						f"{files_processed}({files_errored})/{len(input_files)} files : "
 						f"{(str(days_left) + 'd ' if days_left > 0 else '')}{hours_left - (days_left * 24)}:{minutes_left - (hours_left * 60):02}:{seconds_left - (minutes_left * 60):02} remaining : "
 						f"{queue.qsize()} files in queue : {current_time} : {last_log_time} : {current_time - last_log_time if last_log_time is not None else 0} : "
-						f"{(current_time - last_log_time) > 5 if last_log_time is not None else 0} : {int(current_time - last_log_time) > 5 if last_log_time is not None else 0} : {queue.empty()}")
+						f"{(current_time - last_log_time) > 5 if last_log_time is not None else 0} : {int(current_time - last_log_time) > 5 if last_log_time is not None else 0} : "
+						f"{last_log_time is None or (current_time - last_log_time) > 5 or queue.empty()} : {queue.empty()}")
 					last_log_time = time.time()
 
 	log.info(f"{total_lines_processed:,}, {total_lines_errored} errored : {(total_bytes_processed / (2**30)):.2f} gb, {(total_bytes_processed / total_bytes) * 100:.0f}% : {files_processed}/{len(input_files)}")
