@@ -77,7 +77,7 @@ def load_file_list(status_json):
 	if os.path.exists(status_json):
 		with open(status_json, 'r') as status_json_file:
 			output_dict = json.load(status_json_file)
-			input_files = []
+			input_files = {}
 			for simple_file in output_dict["files"]:
 				input_files[simple_file[0]] = FileConfig(simple_file[0], simple_file[1], simple_file[2], simple_file[3], simple_file[4])
 			return input_files, output_dict["type"]
@@ -222,7 +222,7 @@ if __name__ == '__main__':
 					files_processed = 0
 					files_errored = 0
 					i = 0
-					for file in input_files:
+					for file in input_files.values():
 						total_lines_processed += file.lines_processed
 						total_bytes_processed += file.bytes_processed
 						total_lines_errored += file.error_lines
@@ -254,7 +254,7 @@ if __name__ == '__main__':
 	count_complete = 0
 	count_incomplete = 0
 	# build a list of output files to combine
-	for file in input_files:
+	for file in input_files.values():
 		if not file.complete:
 			if file.error_message is not None:
 				log.info(f"File {file.input_path} errored {file.error_message}")
