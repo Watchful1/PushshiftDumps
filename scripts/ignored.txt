@@ -156,3 +156,17 @@ The-Worst-Bot
 theHelperdroid
 VredditDownloader
 YOUREABOT
+YTubeInfoBot
+URLfixerBot
+TweetsInCommentsBot
+SovietRussiaBot
+ShibeBot
+PressFBot
+LittleHelperRobot
+LinkFixerBot
+LinkFixerBotSnr
+Link_Demobilizer
+LazyLinkerBot
+Darnit_Bot
+checks_out_bot
+HippoBot9000

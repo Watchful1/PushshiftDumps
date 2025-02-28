@@ -12,11 +12,10 @@ import json
 # change the subreddits to the list of subreddits, one per line. The case must exactly match, ie, for r/AskReddit, put "AskReddit"
 # the files in the folder must match the format from the torrent, subreddit_type.zst, like AskReddit_comments.zst
 # the script will look for both comments and submissions files for each subreddit
-folder = r"\\MYCLOUDPR4100\Public\reddit\subreddits23"
+folder = r"\\MYCLOUDPR4100\Public\reddit\subreddits24"
 subreddits_string = """
-	TheSimpsons
-	Askmen
-	Seinfeld
+	navy
+	beetle
 """
 ignored_users = {'[deleted]', 'automoderator'}
 # this is a list of users to ignore when doing the comparison. Most popular bots post in many subreddits and aren't the person you're looking for
@@ -25,6 +24,8 @@ ignored_users_file = "ignored.txt"
 min_comments_per_sub = 1
 output_file_name = "users.txt"
 require_first_subreddit = False  # if true, print users that occur in the first subreddit and any one of the following ones. Otherwise just find the most overlap between all subs
+from_date = datetime.strptime("2005-01-01", "%Y-%m-%d")
+to_date = datetime.strptime("2030-12-31", "%Y-%m-%d")
 
 
 # sets up logging to the console as well as a file
@@ -74,7 +75,7 @@ def read_lines_zst(file_name):
 		reader.close()
 
 
-def get_commenters_from_file(subreddit, subreddit_file, subreddit_commenters, total_lines, files_status):
+def get_commenters_from_file(subreddit, subreddit_file, subreddit_commenters, total_lines, files_status, from_date, to_date):
 	file_lines = 0
 	created = None
 	file_size = os.stat(subreddit_file).st_size
@@ -87,6 +88,8 @@ def get_commenters_from_file(subreddit, subreddit_file, subreddit_commenters, to
 		try:
 			obj = json.loads(line)
 			created = datetime.utcfromtimestamp(int(obj['created_utc']))
+			if created < from_date or created > to_date:
+				continue
 
 			if obj['author'].lower() not in ignored_users:
 				subreddit_commenters[obj['author']] += 1
@@ -171,8 +174,10 @@ if __name__ == "__main__":
 				subreddit_stat[file_type],
 				commenters,
 				total_lines,
-				f"{files_processed}|{len(subreddit_stats)}")
-
+				f"{files_processed}|{len(subreddit_stats)}",
+				from_date,
+				to_date
+			)
 		for commenter in commenters:
 			if require_first_subreddit and not is_first and commenter not in commenterSubreddits:
 				continue
@@ -199,6 +204,7 @@ if __name__ == "__main__":
 
 		with open(output_file_name, 'w') as txt:
 			log.info(f"Writing output to {output_file_name}")
+			txt.write(f"Commenters in subreddits {(', '.join(subreddits))}\n")
 			for i in range(len(subreddits)):
 				commenters = len(sharedCommenters[len(subreddits) - i])
 				inner_str = f"but {i} " if i != 0 else ""
