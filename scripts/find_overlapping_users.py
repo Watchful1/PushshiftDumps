@@ -24,7 +24,7 @@ ignored_users_file = "ignored.txt"
 min_comments_per_sub = 1
 output_file_name = "users.txt"
 require_first_subreddit = False  # if true, print users that occur in the first subreddit and any one of the following ones. Otherwise just find the most overlap between all subs
-from_date = datetime.strptime("2005-01-01", "%Y-%m-%d")
+from_date = datetime.strptime("2024-11-01", "%Y-%m-%d")
 to_date = datetime.strptime("2030-12-31", "%Y-%m-%d")
 
 
@@ -119,6 +119,7 @@ if __name__ == "__main__":
 		log.info(f"Finding users from the first subreddit that are in any of the other subreddits")
 	log.info(f"Minimum comments per subreddit set to {min_comments_per_sub}")
 	log.info(f"Outputting to {output_file_name}")
+	log.info(f"From date {from_date.strftime('%Y-%m-%d')} to date {to_date.strftime('%Y-%m-%d')}")
 
 	if os.path.exists(ignored_users_file):
 		with open(ignored_users_file) as fh:

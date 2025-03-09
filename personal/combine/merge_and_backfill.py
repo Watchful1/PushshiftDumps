@@ -133,7 +133,8 @@ def query_reddit(ids, reddit, object_type):
 		try:
 			response = reddit.request(method="GET", path=endpoints.API_PATH["info"], params={"id": id_string})
 			break
-		except (prawcore.exceptions.ServerError, prawcore.exceptions.RequestException):
+		except (prawcore.exceptions.ServerError, prawcore.exceptions.RequestException) as err:
+			log.info(f"No response from reddit api: {err} : {id_string}")
 			time.sleep(2)
 	return response['data']['children']
 
