@@ -129,7 +129,7 @@ def query_reddit(ids, reddit, object_type):
 	id_prefix = 't1_' if object_type == ObjectType.COMMENT else 't3_'
 	id_string = f"{id_prefix}{(f',{id_prefix}'.join(ids))}"
 	response = None
-	for i in range(100):
+	for i in range(20):
 		try:
 			response = reddit.request(method="GET", path=endpoints.API_PATH["info"], params={"id": id_string})
 			break
@@ -138,7 +138,7 @@ def query_reddit(ids, reddit, object_type):
 			time.sleep(i * 5)
 	if response is None:
 		log.warning(f"Reddit api failed, aborting")
-		raise IOError
+		return []
 	return response['data']['children']
 
 
