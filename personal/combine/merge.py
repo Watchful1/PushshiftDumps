@@ -180,7 +180,7 @@ field_actions = {
 		"gallery_data": FieldAction.OVERWRITE_NOT_NONE,
 		"gilded": FieldAction.OVERWRITE_NOT_NONE,
 		"gildings": FieldAction.OVERWRITE_NOT_NONE,
-		"hidden": FieldAction.ALLOW_EMPTY,
+		"hidden": FieldAction.SPECIAL_NO_OVERWRITE,
 		"hide_score": FieldAction.OVERWRITE,
 		"href_url": FieldAction.DONT_OVERWRITE,
 		"id": FieldAction.ALLOW,
@@ -412,7 +412,7 @@ def parse_fields(new_obj, obj_type):
 					unmatched_field = True
 					keys_to_delete.append(key)
 			elif action == FieldAction.SPECIAL_NO_OVERWRITE:
-				if key in ["can_mod_post", "saved", "clicked", "visited", "author_is_blocked"]:
+				if key in ["can_mod_post", "saved", "clicked", "visited", "author_is_blocked", "hidden"]:
 					new_obj[key] = False
 				elif key in ["banned_at_utc", "banned_by", "approved_at_utc", "approved_by", "user_reports_dismissed", "mod_reports_dismissed", "removed_by", "mod_note", "mod_reason_by", "mod_reason_title"]:
 					new_obj[key] = None
