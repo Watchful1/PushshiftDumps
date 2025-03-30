@@ -14,8 +14,8 @@ import json
 # the script will look for both comments and submissions files for each subreddit
 folder = r"\\MYCLOUDPR4100\Public\reddit\subreddits24"
 subreddits_string = """
-	navy
-	beetle
+	Truckers
+	SIBO
 """
 ignored_users = {'[deleted]', 'automoderator'}
 # this is a list of users to ignore when doing the comparison. Most popular bots post in many subreddits and aren't the person you're looking for
@@ -24,8 +24,8 @@ ignored_users_file = "ignored.txt"
 min_comments_per_sub = 1
 output_file_name = "users.txt"
 require_first_subreddit = False  # if true, print users that occur in the first subreddit and any one of the following ones. Otherwise just find the most overlap between all subs
-from_date = datetime.strptime("2024-11-01", "%Y-%m-%d")
-to_date = datetime.strptime("2030-12-31", "%Y-%m-%d")
+from_date = datetime.strptime("2005-01-01", "%Y-%m-%d")
+to_date = datetime.strptime("2040-12-31", "%Y-%m-%d")
 
 
 # sets up logging to the console as well as a file
