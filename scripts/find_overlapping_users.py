@@ -8,6 +8,7 @@ import zstandard
 import json
 
 # IMPORTANT SETUP INSTRUCTIONS
+# get subreddit files from here https://www.reddit.com/r/pushshift/comments/1itme1k/separate_dump_files_for_the_top_40k_subreddits/
 # change the folder line to the folder where the files are stored
 # change the subreddits to the list of subreddits, one per line. The case must exactly match, ie, for r/AskReddit, put "AskReddit"
 # the files in the folder must match the format from the torrent, subreddit_type.zst, like AskReddit_comments.zst
