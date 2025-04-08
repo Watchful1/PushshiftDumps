@@ -301,7 +301,14 @@ if __name__ == '__main__':
 	parser.add_argument("--value_list", help="A file of newline separated values to use. Overrides the value param if it is set", default=None)
 	parser.add_argument("--processes", help="Number of processes to use", default=10, type=int)
 	parser.add_argument("--file_filter", help="Regex filenames have to match to be processed", default="^RC_|^RS_")
-	parser.add_argument("--split_intermediate", help="Split the intermediate files by the first letter of the matched field, use if the filter will result in a large number of separate files", action="store_true")
+	parser.add_argument(
+		"--split_intermediate",
+		help="Split the intermediate files by the first letter of the matched field, use if the filter will result in a large number of separate files",
+		action="store_true")
+	parser.add_argument(
+		"--single_output",
+		help="Output a single combined file instead of splitting by the search term",
+		action="store_true")
 	parser.add_argument(
 		"--error_rate", help=
 		"Percentage as an integer from 0 to 100 of the lines where the field can be missing. For the subreddit field especially, "
@@ -329,8 +336,8 @@ if __name__ == '__main__':
 	else:
 		log.info(f"Writing output to working folder")
 
-	if (args.partial or args.regex) and args.split_intermediate:
-		log.info("The partial and regex flags are not compatible with the split_intermediate flag")
+	if (args.partial or args.regex or args.single_output) and args.split_intermediate:
+		log.info("The partial, regex and single_output flags are not compatible with the split_intermediate flag")
 		sys.exit(1)
 
 	values = set()
@@ -367,6 +374,9 @@ if __name__ == '__main__':
 			log.info(f"Checking if any of {val_string} are contained in field {args.field}")
 		else:
 			log.info(f"Checking if any of {val_string} exactly match field {args.field}")
+
+	if args.partial or args.regex or args.single_output:
+		log.info(f"Outputing to a single combined file")
 
 	multiprocessing.set_start_method('spawn')
 	queue = multiprocessing.Manager().Queue()
@@ -559,7 +569,7 @@ if __name__ == '__main__':
 				for line, file_bytes_processed in input_handle.yield_lines():
 					output_lines += 1
 					obj = json.loads(line)
-					if args.partial or args.regex:
+					if args.partial or args.regex or args.single_output:
 						observed_case = "output"
 					else:
 						observed_case = obj[args.field]

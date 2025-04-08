@@ -170,3 +170,7 @@ LazyLinkerBot
 Darnit_Bot
 checks_out_bot
 HippoBot9000
+could-of-bot
+mentionhelper
+RossGellerBot
+the_timezone_bot
