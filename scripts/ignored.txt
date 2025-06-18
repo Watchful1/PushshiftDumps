@@ -174,3 +174,8 @@ could-of-bot
 mentionhelper
 RossGellerBot
 the_timezone_bot
+TitleLinkHelperBot
+timee_bot
+notthebottest
+colorsbot
+ComeOnMisspellingBot

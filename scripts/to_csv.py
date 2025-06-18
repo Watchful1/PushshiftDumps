@@ -17,9 +17,9 @@ import logging.handlers
 
 
 # put the path to the input file
-input_file_path = r"\\MYCLOUDPR4100\Public\tools\PushshiftDumps\Straight-Wrap-172_submissions.zst"
+input_file_path = r"\\MYCLOUDPR4100\Public\reddit\subreddits24\StockMarket_submissions.zst"
 # put the path to the output file, with the csv extension
-output_file_path = r"\\MYCLOUDPR4100\Public\Straight-Wrap-172_submissions.csv"
+output_file_path = r"\\MYCLOUDPR4100\Public\StockMarket_submissions.csv"
 # if you want a custom set of fields, put them in the following list. If you leave it empty the script will use a default set of fields
 fields = []
 
@@ -94,7 +94,7 @@ if __name__ == "__main__":
 						value = f"u/{obj['author']}"
 					elif field == "text":
 						if 'selftext' in obj:
-							value = obj['selftext']
+							value = obj['selftext']#[:32000] # remove first # if the subreddit has very large text posts and you want to open this in excel
 						else:
 							value = ""
 					else:
