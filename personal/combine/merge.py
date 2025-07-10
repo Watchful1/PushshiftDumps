@@ -56,7 +56,7 @@ field_actions = {
 		"can_gild": FieldAction.OVERWRITE,
 		"can_mod_post": FieldAction.SPECIAL_NO_OVERWRITE,
 		"collapsed": FieldAction.OVERWRITE,
-		"collapsed_because_crowd_control": FieldAction.ALLOW_EMPTY,
+		"collapsed_because_crowd_control": FieldAction.SPECIAL_NO_OVERWRITE,
 		"collapsed_reason": FieldAction.OVERWRITE,
 		"collapsed_reason_code": FieldAction.OVERWRITE,
 		"comment_type": FieldAction.OVERWRITE_NOT_NONE,
@@ -414,7 +414,7 @@ def parse_fields(new_obj, obj_type):
 			elif action == FieldAction.SPECIAL_NO_OVERWRITE:
 				if key in ["can_mod_post", "saved", "clicked", "visited", "author_is_blocked", "hidden"]:
 					new_obj[key] = False
-				elif key in ["banned_at_utc", "banned_by", "approved_at_utc", "approved_by", "user_reports_dismissed", "mod_reports_dismissed", "removed_by", "mod_note", "mod_reason_by", "mod_reason_title"]:
+				elif key in ["banned_at_utc", "banned_by", "approved_at_utc", "approved_by", "user_reports_dismissed", "mod_reports_dismissed", "removed_by", "mod_note", "mod_reason_by", "mod_reason_title", "collapsed_because_crowd_control"]:
 					new_obj[key] = None
 				elif key in ["num_reports", "downs"]:
 					new_obj[key] = 0
