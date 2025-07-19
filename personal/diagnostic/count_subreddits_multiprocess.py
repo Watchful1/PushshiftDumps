@@ -66,7 +66,7 @@ def save_file_list(input_files, working_folder, status_json, script_type, stage)
 		os.makedirs(working_folder)
 	simple_file_list = []
 	for file in input_files:
-		simple_file_list.append([file.input_path, file.output_path, file.complete, file.lines_processed, file.error_lines, file.monthly_count_file])
+		simple_file_list.append([file.input_path, file.output_path, file.complete, file.lines_processed, file.error_lines, file.count_file_path])
 	with open(status_json, 'w') as status_json_file:
 		output_dict = {
 			"files": simple_file_list,
