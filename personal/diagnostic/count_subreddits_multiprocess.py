@@ -262,7 +262,7 @@ if __name__ == '__main__':
 						files_errored += 1 if file.error_message is not None else 0
 						i += 1
 					if file_update.complete or file_update.error_message is not None:
-						save_file_list(input_files, args.working, status_json, script_type)
+						save_file_list(input_files, args.working, status_json, script_type, stage)
 					current_time = time.time()
 					progress_queue.put([current_time, total_lines_processed, total_bytes_processed])
 
