@@ -238,7 +238,7 @@ if __name__ == '__main__':
 			# start the workers
 			with multiprocessing.Pool(processes=min(args.processes, len(files_to_process))) as pool:
 				workers = pool.starmap_async(process_file, [(file, queue, args.field) for file in files_to_process], chunksize=1, error_callback=log.info)
-				while not workers.ready():
+				while not workers.ready() or not queue.empty():
 					# loop until the workers are all done, pulling in status messages as they are sent
 					file_update = queue.get()
 					if file_update.error_message is not None:
