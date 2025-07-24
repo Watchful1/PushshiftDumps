@@ -340,8 +340,12 @@ if __name__ == '__main__':
 		for file in input_files:
 			with open(file.monthly_count_file, 'r') as input_handle:
 				for line in input_handle:
-					field, count = line.strip().split("\t")
-					field_counts[field] = count
+					try:
+						field, count = line.strip().split("\t")
+						field_counts[field] = count
+					except Exception as err:
+						log.info(f"Line failed in file {file.monthly_count_file}: {line}")
+						raise
 
 		sorted_counts = sorted(field_counts.items(), key=lambda item: item[1], reverse=True)
 
