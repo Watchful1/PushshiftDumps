@@ -134,6 +134,8 @@ def process_file(file, queue, field):
 			try:
 				obj = json.loads(line)
 				observed = obj[field].lower()
+				if observed is None or observed == "":
+					continue
 				if output_file is None:
 					output_file = open(file.output_path, 'w', encoding="utf-8")
 				output_file.write(observed)
@@ -342,7 +344,7 @@ if __name__ == '__main__':
 				for line in input_handle:
 					try:
 						field, count = line.strip().split("\t")
-						field_counts[field] = count
+						field_counts[field] = int(count)
 					except Exception as err:
 						log.info(f"Line failed in file {file.count_file_path}: {line}")
 						raise

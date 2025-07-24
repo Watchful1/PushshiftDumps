@@ -8,7 +8,7 @@ log = discord_logging.init_logging()
 if __name__ == "__main__":
 	day = None
 	day_comments = 0
-	for comment in utils.read_obj_zst(r"\\MYCLOUDPR4100\Public\reddit\subreddits24\NewTubers_comments.zst"):
+	for comment in utils.read_obj_zst(r"\\MYCLOUDPR4100\Public\reddit\subreddits24\recruitinghell_submissions.zst"):
 		created_day = datetime.utcfromtimestamp(int(comment['created_utc'])).strftime("%y-%m-%d")
 		if day is None:
 			day = created_day
