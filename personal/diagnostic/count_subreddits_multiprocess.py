@@ -326,8 +326,8 @@ if __name__ == '__main__':
 					input_lines += 1
 					monthly_counts[line.strip()] += 1
 
-			file.monthly_count_file = os.path.join(args.monthly_count_folder, os.path.basename(file.output_path))
-			with open(file.monthly_count_file, 'w') as output_handle:
+			file.count_file_path = os.path.join(args.monthly_count_folder, os.path.basename(file.output_path))
+			with open(file.count_file_path, 'w') as output_handle:
 				for field, count in sorted(monthly_counts.items(), key=lambda item: item[1], reverse=True):
 					output_handle.write(f"{field}	{count}\n")
 
@@ -338,13 +338,13 @@ if __name__ == '__main__':
 	if stage == "agg":
 		field_counts = defaultdict(int)
 		for file in input_files:
-			with open(file.monthly_count_file, 'r') as input_handle:
+			with open(file.count_file_path, 'r') as input_handle:
 				for line in input_handle:
 					try:
 						field, count = line.strip().split("\t")
 						field_counts[field] = count
 					except Exception as err:
-						log.info(f"Line failed in file {file.monthly_count_file}: {line}")
+						log.info(f"Line failed in file {file.count_file_path}: {line}")
 						raise
 
 		sorted_counts = sorted(field_counts.items(), key=lambda item: item[1], reverse=True)

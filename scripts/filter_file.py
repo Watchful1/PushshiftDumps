@@ -5,17 +5,18 @@ import sys
 import csv
 from datetime import datetime
 import logging.handlers
+import traceback
 
 # put the path to the input file, or a folder of files to process all of
-input_file = r"\\MYCLOUDPR4100\Public\reddit\subreddits23\wallstreetbets_submissions.zst"
+input_file = r"\\MYCLOUDPR4100\Public\wallstreetbets_comments.zst"
 # put the name or path to the output file. The file extension from below will be added automatically. If the input file is a folder, the output will be treated as a folder as well
-output_file = r"\\MYCLOUDPR4100\Public\output"
+output_file = r"\\MYCLOUDPR4100\Public\wallstreetbets_comments"
 # the format to output in, pick from the following options
 #   zst: same as the input, a zstandard compressed ndjson file. Can be read by the other scripts in the repo
 #   txt: an ndjson file, which is a text file with a separate json object on each line. Can be opened by any text editor
 #   csv: a comma separated value file. Can be opened by a text editor or excel
 # WARNING READ THIS: if you use txt or csv output on a large input file without filtering out most of the rows, the resulting file will be extremely large. Usually about 7 times as large as the compressed input file
-output_format = "csv"
+output_format = "zst"
 # override the above format and output only this field into a text file, one per line. Useful if you want to make a list of authors or ids. See the examples below
 # any field that's in the dump is supported, but useful ones are
 #   author: the username of the author
@@ -76,12 +77,15 @@ to_date = datetime.strptime("2030-12-31", "%Y-%m-%d")
 # if you want only top level comments instead of all comments, you can set field to "parent_id" instead of "link_id"
 
 # change this to field = None if you don't want to filter by anything
-field = "body"
+field = "selftext"
 values = ['']
 # if you have a long list of values, you can put them in a file and put the filename here. If set this overrides the value list above
 # if this list is very large, it could greatly slow down the process
 values_file = None
+# if true, only match the full value, if false match the value anywhere in the text. Partial matches are much slower
 exact_match = False
+# if true, returns rows that do not match the condition
+inverse = False
 
 
 # sets up logging to the console as well as a file
@@ -209,7 +213,10 @@ def process_file(input_file, output_file, output_format, field, values, from_dat
 				continue
 
 			if field is not None:
-				field_value = obj[field].lower()
+				field_value = obj[field]
+				if field_value is None:
+					continue
+				field_value = field_value.lower()
 				matched = False
 				for value in values:
 					if exact_match:
@@ -220,8 +227,13 @@ def process_file(input_file, output_file, output_format, field, values, from_dat
 						if value in field_value:
 							matched = True
 							break
-				if not matched:
-					continue
+				if inverse:
+					if matched:
+						continue
+				else:
+					if not matched:
+						continue
+
 
 			matched_lines += 1
 			if output_format == "zst":
