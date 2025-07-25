@@ -15,8 +15,9 @@ import json
 # the script will look for both comments and submissions files for each subreddit
 folder = r"\\MYCLOUDPR4100\Public\reddit\subreddits24"
 subreddits_string = """
-	fragranceswap
-	MTB
+	Porsche
+	orchids
+	Watches
 """
 ignored_users = {'[deleted]', 'automoderator'}
 # this is a list of users to ignore when doing the comparison. Most popular bots post in many subreddits and aren't the person you're looking for

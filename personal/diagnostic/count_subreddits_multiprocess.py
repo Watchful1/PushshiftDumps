@@ -347,7 +347,7 @@ if __name__ == '__main__':
 						field_counts[field] = int(count)
 					except Exception as err:
 						log.info(f"Line failed in file {file.count_file_path}: {line}")
-						raise
+						continue
 
 		sorted_counts = sorted(field_counts.items(), key=lambda item: item[1], reverse=True)
 
