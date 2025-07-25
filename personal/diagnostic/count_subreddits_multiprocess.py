@@ -344,7 +344,7 @@ if __name__ == '__main__':
 				for line in input_handle:
 					try:
 						field, count = line.strip().split("\t")
-						field_counts[field] = int(count)
+						field_counts[field] += int(count)
 					except Exception as err:
 						log.info(f"Line failed in file {file.count_file_path}: {line}")
 						continue
