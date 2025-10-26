@@ -255,10 +255,10 @@ class ObjectDict:
 	def get_missing_ids_by_minutes(self, start_minute, end_minute, ignore_ids):
 		start_id = self.by_minute[start_minute].min_id
 		end_id = self.by_minute[end_minute].max_id
-		if start_id is None:
+		if start_id is None or end_id is None:
 			log.warning(f"Unable to get start id for start minute {start_minute} : {self.by_minute[start_minute]}")
-		if end_id is None:
 			log.warning(f"Unable to get end id for end minute {end_minute} : {self.by_minute[end_minute]}")
+			return [], None, None
 		missing_ids = []
 		count_ignored_ids = 0
 		for int_id in range(start_id, end_id + 1):

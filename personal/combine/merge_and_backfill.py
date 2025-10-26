@@ -189,6 +189,10 @@ def build_day(day_to_process, input_folders, output_folder, object_type, reddit,
 			else:
 				working_highest_minute = minute_iterator - timedelta(minutes=1)
 			missing_ids, start_id, end_id = objects.get_missing_ids_by_minutes(working_lowest_minute, working_highest_minute, ignore_ids)
+			if start_id is None or end_id is None:
+				log.warning(f"Unable to get start or end id for minute {minute_iterator} : {working_lowest_minute} : {working_highest_minute}")
+				minute_iterator += timedelta(minutes=1)
+				continue
 			log.debug(
 				f"{file_type}: Backfilling from: {working_lowest_minute.strftime('%y-%m-%d_%H-%M')} ({utils.base36encode(start_id)}|{start_id}) to "
 				f"{working_highest_minute.strftime('%y-%m-%d_%H-%M')} ({utils.base36encode(end_id)}|{end_id}) with {len(missing_ids)} ({end_id - start_id}) ids")
