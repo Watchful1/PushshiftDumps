@@ -255,6 +255,10 @@ class ObjectDict:
 	def get_missing_ids_by_minutes(self, start_minute, end_minute, ignore_ids):
 		start_id = self.by_minute[start_minute].min_id
 		end_id = self.by_minute[end_minute].max_id
+		if start_id is None:
+			log.warning(f"Unable to get start id for start minute {start_minute} : {self.by_minute[start_minute]}")
+		if end_id is None:
+			log.warning(f"Unable to get end id for end minute {end_minute} : {self.by_minute[end_minute]}")
 		missing_ids = []
 		count_ignored_ids = 0
 		for int_id in range(start_id, end_id + 1):
@@ -312,3 +316,6 @@ class ObjectMinuteList:
 	def add(self, obj):
 		self.min_id, self.max_id = utils.merge_lowest_highest_id(obj['id'], self.min_id, self.max_id)
 		self.obj_list.add(obj)
+
+	def __str__(self):
+		return f"{len(self.obj_list)} : {self.min_id} : {self.max_id}"
