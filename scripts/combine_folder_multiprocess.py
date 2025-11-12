@@ -489,7 +489,9 @@ if __name__ == '__main__':
 	count_intermediate_files = 0
 	# build a list of output files to combine
 	for file in sorted(input_files, key=lambda item: os.path.split(item.output_path)[1]):
-		if not file.complete:
+		if re.search(args.file_filter, os.path.basename(file.input_path)) is None:
+			log.info(f"File {file.input_path} skipped based on file_filter")
+		elif not file.complete:
 			if file.error_message is not None:
 				log.info(f"File {file.input_path} errored {file.error_message}")
 			else:
