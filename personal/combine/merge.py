@@ -89,6 +89,8 @@ field_actions = {
 		"num_reports": FieldAction.SPECIAL_NO_OVERWRITE,
 		"parent_id": FieldAction.OVERWRITE_IF_NONE,
 		"permalink": FieldAction.DONT_OVERWRITE,
+		"profile_img": FieldAction.OVERWRITE_NOT_NONE,
+		"profile_over_18": FieldAction.OVERWRITE_NOT_NONE,
 		"removal_reason": FieldAction.SPECIAL,
 		"removed": FieldAction.DELETE,
 		"replies": FieldAction.OVERWRITE_IF_NONE,
