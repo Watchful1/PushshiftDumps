@@ -228,7 +228,7 @@ field_actions = {
 		"num_crossposts": FieldAction.OVERWRITE,
 		"num_reports": FieldAction.SPECIAL_NO_OVERWRITE,
 		"original_link": FieldAction.ALLOW_EMPTY,
-		"outbound_link": FieldAction.ALLOW_EMPTY,
+		"outbound_link": FieldAction.OVERWRITE_NOT_NONE,
 		"over_18": FieldAction.OVERWRITE,
 		"parent_whitelist_status": FieldAction.OVERWRITE,
 		"permalink": FieldAction.DONT_OVERWRITE,
