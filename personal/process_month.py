@@ -229,9 +229,10 @@ def process(queue, base_folder, month, file_type, type_stages, reddit_username, 
 		# for stage, status in type_stages.items():
 		# 	log.info(f"{file_type} {stage}: {status}")
 	except Exception as err:
-		log.warning(f"Error in {file_type}: {err}")
+		error_message = f"{type(err).__module__}.{type(err).__name__}: {err}"
+		log.warning(f"Error in {file_type}: {error_message}")
 		log.warning(traceback.format_exc())
-		queue.put((file_type, "error", str(err)))
+		queue.put((file_type, "error", error_message))
 		discord_logging.flush_discord()
 		# for stage, status in type_stages.items():
 		# 	log.info(f"{file_type} {stage}: {status}")
