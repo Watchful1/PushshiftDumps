@@ -198,3 +198,7 @@ xkcd_transcriber
 XPostLinker
 Yasuo_Spelling_Bot
 yourewelcome_bot
+tweet_poster
+TweetPoster
+tweettranscriberbot
+qkme_transcriber
