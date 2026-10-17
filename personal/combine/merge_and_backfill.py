@@ -1,5 +1,6 @@
 import sys
 import requests
+import subprocess
 import time
 import discord_logging
 import argparse
@@ -27,55 +28,89 @@ NEWLINE_ENCODED = "\n".encode('utf-8')
 reg = re.compile(r"\d\d-\d\d-\d\d_\d\d-\d\d")
 
 
-def get_pushshift_token(old_token):
-	saved_token = load_pushshift_token()
-	if saved_token is None or old_token == saved_token:
-		log.info(f"Requesting new token")
-		result_token = re_auth_pushshift(old_token)
-		save_pushshift_token(result_token)
-	else:
-		result_token = saved_token
-
-	return result_token
+TOKEN_SSH_TIMEOUT_SECONDS = 60
+TOKEN_WAIT_SECONDS = 30
+TOKEN_WAIT_LIMIT_SECONDS = 15 * 60
 
 
-def save_pushshift_token(token):
-	with open("pushshift.txt", 'w') as file:
-		file.write(token)
-
-
-def load_pushshift_token():
-	with open("pushshift.txt", 'r') as file:
-		token = file.read().strip()
+def fetch_pushshift_token(token_host, token_path):
+	"""Read the token file the ingest maintains on token_host over ssh. Never logs the value."""
+	try:
+		result = subprocess.run(
+			["ssh", "-n", "-o", "BatchMode=yes", "-o", "ConnectTimeout=20", token_host, "cat", token_path],
+			capture_output=True, text=True, timeout=TOKEN_SSH_TIMEOUT_SECONDS)
+	except subprocess.TimeoutExpired:
+		raise RuntimeError(f"Timed out fetching the pushshift token from {token_host}")
+	except OSError as err:
+		raise RuntimeError(f"Could not run ssh to fetch the pushshift token: {err}")
+	if result.returncode != 0:
+		raise RuntimeError(
+			f"Fetching the pushshift token from {token_host}:{token_path} failed with code {result.returncode}: {result.stderr.strip()}")
+	token = result.stdout.strip()
+	if not token:
+		raise RuntimeError(f"Pushshift token file {token_path} on {token_host} is empty")
 	return token
 
 
-def re_auth_pushshift(old_token):
-	url = f"https://auth.pushshift.io/refresh?access_token={old_token}"
-	log.warning(f"Reauth request: {url}")
-	response = requests.post(url)
-	result = response.json()
-	log.warning(f"Reauth response: {str(result)}")
-	discord_logging.flush_discord()
-	if 'access_token' in result:
-		new_token = result['access_token']
-		log.warning(f"New pushshift token: {new_token}")
-		save_pushshift_token(new_token)
-		discord_logging.flush_discord()
-		return new_token
-	elif 'detail' in result:
-		if result['detail'] == 'Access token is still active and can not be refreshed.':
-			log.warning(f"Access token still active, trying request again")
-			time.sleep(5)
-			return old_token
+class PushshiftTokenFetcher:
+	"""Read-only view of the token the ingest refreshes on token_host.
 
-		log.warning(f"Reauth failed: {result['detail']}")
-		discord_logging.flush_discord()
-		sys.exit(1)
-	else:
-		log.warning(f"Something went wrong re-authing")
-		discord_logging.flush_discord()
-		sys.exit(1)
+	The ingest is the only process that may call auth.pushshift.io/refresh, so on a 403 this
+	just re-fetches the file and waits for the ingest to change it. A transient ssh failure is
+	treated the same as an unchanged token: retried every TOKEN_WAIT_SECONDS until the deadline.
+	Pass a lock when several workers share one so they do not all hit ssh at once; it is only
+	held around the ssh call itself, never across a sleep.
+	"""
+	def __init__(self, token_host, token_path, lock=None):
+		self.token_host = token_host
+		self.token_path = token_path
+		self.lock = lock
+		self.token = None
+
+	def _fetch(self):
+		if self.lock is not None:
+			self.lock.acquire()
+		try:
+			return fetch_pushshift_token(self.token_host, self.token_path)
+		finally:
+			if self.lock is not None:
+				self.lock.release()
+
+	def _wait_for_token(self, failed_token, waiting_for):
+		deadline = time.monotonic() + TOKEN_WAIT_LIMIT_SECONDS
+		first_wait = True
+		while True:
+			try:
+				token = self._fetch()
+			except RuntimeError as err:
+				log.info(f"Pushshift token fetch failed, will retry: {err}")
+				token = failed_token
+			if token != failed_token:
+				return token
+			if time.monotonic() >= deadline:
+				raise RuntimeError(
+					f"Could not get {waiting_for} from {self.token_host} in {TOKEN_WAIT_LIMIT_SECONDS // 60} minutes, is the ingest refreshing it?")
+			message = f"Pushshift token not available yet ({waiting_for}), waiting {TOKEN_WAIT_SECONDS}s for the ingest"
+			if first_wait:
+				log.warning(message)
+				first_wait = False
+			else:
+				log.info(message)
+			time.sleep(TOKEN_WAIT_SECONDS)
+
+	def __call__(self, failed_token):
+		if failed_token is None:
+			if self.token is None:
+				self.token = self._wait_for_token(None, "an initial token")
+				log.info(f"Fetched pushshift token from {self.token_host}")
+			return self.token
+
+		if self.token is not None and self.token != failed_token:
+			return self.token
+
+		self.token = self._wait_for_token(failed_token, "a changed token")
+		log.info(f"Pushshift token on {self.token_host} changed, using the new one")
+		return self.token
 
 
 def query_pushshift(ids, bearer, object_type, pushshift_token_function):
@@ -102,24 +137,21 @@ def query_pushshift(ids, bearer, object_type, pushshift_token_function):
 		if response.status_code == 200:
 			break
 		if response.status_code == 403:
-			log.warning(f"Pushshift 403, trying reauth: {response.json()}")
+			log.warning(f"Pushshift 403, fetching the current token: {response.text[:200]}")
 			log.warning(url)
-			log.warning(f"'Authorization': Bearer {bearer}")
 			bearer = pushshift_token_function(bearer)
 		log.info(f"Pushshift failed, sleeping {current_attempt * sleep_per_attempt} : status {response.status_code}")
 		time.sleep(current_attempt * sleep_per_attempt)
 	if response is None:
 		log.warning(f"{current_attempt + 1} requests failed with no response")
 		log.warning(url)
-		log.warning(f"'Authorization': Bearer {bearer}")
 		discord_logging.flush_discord()
-		sys.exit(1)
+		raise RuntimeError(f"Pushshift gave no response after {current_attempt + 1} attempts")
 	if response.status_code != 200:
 		log.warning(f"{current_attempt + 1} requests failed with status code {response.status_code}")
 		log.warning(url)
-		log.warning(f"'Authorization': Bearer {bearer}")
 		discord_logging.flush_discord()
-		sys.exit(1)
+		raise RuntimeError(f"Pushshift failed with status {response.status_code} after {current_attempt + 1} attempts")
 	if current_attempt > 0:
 		log.info(f"Pushshift call succeeded after {current_attempt + 1} retries")
 	return response.json()['data'], bearer
@@ -150,7 +182,6 @@ def build_day(day_to_process, input_folders, output_folder, object_type, reddit,
 	file_type = "comments" if object_type == ObjectType.COMMENT else "submissions"
 
 	pushshift_token = pushshift_token_function(None)
-	log.info(f"{file_type}: Using pushshift token: {pushshift_token}")
 
 	file_minutes = {}
 	minute_iterator = day_to_process - timedelta(minutes=2)
@@ -237,7 +268,7 @@ def build_day(day_to_process, input_folders, output_folder, object_type, reddit,
 		if unmatched_field:
 			log.warning(f"{file_type}: Unmatched field, aborting")
 			discord_logging.flush_discord()
-			sys.exit(1)
+			raise RuntimeError(f"{file_type}: unmatched field in {day_to_process.strftime('%y-%m-%d')}")
 
 		minute_iterator += timedelta(minutes=1)
 
@@ -258,7 +289,8 @@ if __name__ == "__main__":
 	parser.add_argument("--end_date", help="The end of the date range to process, format YY-MM-DD. If not provided, the script processes to the end of the day")
 	parser.add_argument('--input', help='Input folder', required=True)
 	parser.add_argument('--output', help='Output folder', required=True)
-	parser.add_argument('--pushshift', help='The pushshift token')
+	parser.add_argument('--token_host', help='ssh host that runs PushshiftIngest; the token is read from there and never refreshed here', required=True)
+	parser.add_argument('--token_path', help='Path of the token file on token_host', default="PushshiftIngest/pushshift_token.txt")
 	parser.add_argument("--debug", help="Enable debug logging", action='store_const', const=True, default=False)
 	parser.add_argument("--ignore_ids", help="Ignore ids between the id ranges listed", default=None)
 	args = parser.parse_args()
@@ -304,10 +336,6 @@ if __name__ == "__main__":
 		log_level=logging.WARNING
 	)
 
-	if args.pushshift is not None:
-		log.warning(f"Saving pushshift token: {args.pushshift}")
-		save_pushshift_token(args.pushshift)
-
 	merge_and_backfill(
 		start_date,
 		end_date,
@@ -316,5 +344,5 @@ if __name__ == "__main__":
 		object_type,
 		ignore_ids,
 		"Watchful12",
-		get_pushshift_token
+		PushshiftTokenFetcher(args.token_host, args.token_path)
 	)

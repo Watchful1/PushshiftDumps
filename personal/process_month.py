@@ -6,9 +6,7 @@ sys.path.append('personal/combine')
 import os
 import argparse
 import json
-import time
 import logging.handlers
-import requests
 import praw
 import traceback
 from datetime import datetime, timedelta
@@ -26,69 +24,8 @@ multiprocessing_logging.install_mp_handler(log)
 
 import utils
 from transform import split_blocks_by_minutes
-from combine.merge_and_backfill import build_day, IngestType, ObjectType
+from combine.merge_and_backfill import build_day, fetch_pushshift_token, PushshiftTokenFetcher, IngestType, ObjectType
 from combine import build_month
-
-
-def get_pushshift_token(old_token):
-	global pushshift_lock
-	pushshift_lock.acquire()
-	saved_token = load_pushshift_token()
-	if saved_token is None or saved_token == "" or old_token == saved_token:
-		if old_token is None:
-			log.warning("No saved or passed in token")
-			save_pushshift_token("")
-			raise ValueError("No saved or passed in token")
-
-		log.info(f"Requesting new token")
-		result_token = re_auth_pushshift(old_token)
-		save_pushshift_token(result_token)
-	else:
-		result_token = saved_token
-
-	pushshift_lock.release()
-	return result_token
-
-
-def save_pushshift_token(token):
-	with open("pushshift.txt", 'w') as file:
-		file.write(token)
-
-
-def load_pushshift_token():
-	if not os.path.exists("pushshift.txt"):
-		return None
-	with open("pushshift.txt", 'r') as file:
-		token = file.read().strip()
-	return token
-
-
-def re_auth_pushshift(old_token):
-	url = f"https://auth.pushshift.io/refresh?access_token={old_token}"
-	log.warning(f"Reauth request: {url}")
-	response = requests.post(url)
-	result = response.json()
-	log.warning(f"Reauth response: {str(result)}")
-	discord_logging.flush_discord()
-	if 'access_token' in result:
-		new_token = result['access_token']
-		log.warning(f"New pushshift token: {new_token}")
-		save_pushshift_token(new_token)
-		discord_logging.flush_discord()
-		return new_token
-	elif 'detail' in result:
-		if result['detail'] == 'Access token is still active and can not be refreshed.':
-			log.warning(f"Access token still active, trying request again")
-			time.sleep(5)
-			return old_token
-
-		log.warning(f"Reauth failed: {result['detail']}")
-		discord_logging.flush_discord()
-		return old_token
-	else:
-		log.warning(f"Something went wrong re-authing")
-		discord_logging.flush_discord()
-		return old_token
 
 
 def init(p_lock):
@@ -135,7 +72,7 @@ def end_of_day(input_minute):
 	return input_minute.replace(hour=0, minute=0, second=0) + timedelta(days=1)
 
 
-def process(queue, base_folder, month, file_type, type_stages, reddit_username, compression_level, ignore_ids):
+def process(queue, base_folder, month, file_type, type_stages, reddit_username, compression_level, ignore_ids, token_host, token_path):
 	try:
 		# for stage, status in type_stages.items():
 		# 	log.info(f"{file_type} {stage}: {status}")
@@ -176,6 +113,8 @@ def process(queue, base_folder, month, file_type, type_stages, reddit_username, 
 			log.info(f"{file_type}: Starting {file_type} merge from {start_date}")
 
 			reddit = praw.Reddit(reddit_username)
+			# the ingest on token_host is the only thing that refreshes the token; this only reads it
+			token_fetcher = PushshiftTokenFetcher(token_host, token_path, pushshift_lock)
 
 			input_folders = [
 				(os.path.join(base_folder, "ingest", "ingest"), IngestType.INGEST),
@@ -194,7 +133,7 @@ def process(queue, base_folder, month, file_type, type_stages, reddit_username, 
 					ObjectType.COMMENT if file_type == "comment" else ObjectType.SUBMISSION,
 					reddit,
 					ignore_ids,
-					get_pushshift_token
+					token_fetcher
 				)
 				start_date = end_of_day(start_date)
 				queue.put((file_type, "merge", start_date))
@@ -240,11 +179,25 @@ def process(queue, base_folder, month, file_type, type_stages, reddit_username, 
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description="")
-	parser.add_argument('month', help='Month to process')
-	parser.add_argument('folder', help='Folder under which all the files are stored')
+	parser.add_argument('month', help='Month to process', nargs='?')
+	parser.add_argument('folder', help='Folder under which all the files are stored', nargs='?')
 	parser.add_argument("--ignore_ids", help="Ignore ids between the id ranges listed", default=None)
 	parser.add_argument("--level", help="The compression ratio to output at", default="22")
+	parser.add_argument("--token_host", help="ssh host that runs PushshiftIngest; the pushshift token is read from there and never refreshed here", required=True)
+	parser.add_argument("--token_path", help="Path of the token file on token_host", default="PushshiftIngest/pushshift_token.txt")
+	parser.add_argument("--check_token", help="Only fetch the token once over ssh, report ok or the error, and exit", action='store_const', const=True, default=False)
 	args = parser.parse_args()
+
+	if args.check_token:
+		try:
+			fetch_pushshift_token(args.token_host, args.token_path)
+		except RuntimeError as err:
+			print(f"token check failed: {err}")
+			sys.exit(1)
+		print(f"ok: fetched a token from {args.token_host}:{args.token_path}")
+		sys.exit(0)
+	if args.month is None or args.folder is None:
+		parser.error("month and folder are required unless --check_token is given")
 
 	ignore_ids = []
 	if args.ignore_ids is not None:
@@ -272,7 +225,7 @@ if __name__ == "__main__":
 	with multiprocessing.Pool(processes=2, initializer=init, initargs=(p_lock,)) as pool:
 		arguments = []
 		for file_type, type_stages in stages.items():
-			arguments.append((queue, args.folder, month, file_type, type_stages, "Watchful12", level, ignore_ids))
+			arguments.append((queue, args.folder, month, file_type, type_stages, "Watchful12", level, ignore_ids, args.token_host, args.token_path))
 		workers = pool.starmap_async(process, arguments, chunksize=1, error_callback=log.info)
 		while not workers.ready() or not queue.empty():
 			file_type, stage, status = queue.get()
