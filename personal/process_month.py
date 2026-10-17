@@ -20,7 +20,13 @@ discord_logging.init_discord_logging(
 	section_name="Watchful12",
 	log_level=logging.WARNING,
 )
-multiprocessing_logging.install_mp_handler(log)
+# multiprocessing_logging only installs under the fork start method. Python 3.14 defaults to
+# forkserver on Linux (and the Pool below uses spawn anyway), so fall back to each process
+# logging through its own handlers, which is what the spawned workers already did.
+try:
+	multiprocessing_logging.install_mp_handler(log)
+except AssertionError:
+	log.info("Not installing the multiprocessing log handler: start method is not fork")
 
 import utils
 from transform import split_blocks_by_minutes
