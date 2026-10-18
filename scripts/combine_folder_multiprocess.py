@@ -291,6 +291,93 @@ def process_file(file, queue, field, values, partial, regex, split_intermediate)
 	queue.put(file)
 
 
+# The final output files are first written at zstd's fast default level, because the combine step
+# keeps a write handle open for every output file at once and a level 22 context costs hundreds of
+# megabytes each. With --level they are then recompressed one at a time per process, with the same
+# settings as `zstd -<level> --ultra --long=31`, which needs `zstd -d --long=31` (or
+# max_window_size=2**31, as every reader in this repo already uses) to decompress.
+LONG_WINDOW_LOG = 31
+OUTPUT_SUFFIXES = ("_comments.zst", "_submissions.zst", "_other.zst")
+
+
+def count_lines_bytes(path):
+	# a full decompress also checks the zstd checksum when the file has one
+	lines, size = 0, 0
+	with open(path, 'rb') as file_handle:
+		reader = zstandard.ZstdDecompressor(max_window_size=2**LONG_WINDOW_LOG).stream_reader(file_handle)
+		while True:
+			chunk = reader.read(2**27)
+			if not chunk:
+				break
+			lines += chunk.count(FileHandle.newline_encoded)
+			size += len(chunk)
+	return lines, size
+
+
+def is_recompressed(path):
+	# FileHandle writes without a checksum and the recompress always writes one, so the checksum
+	# flag marks a file that is already done. This is what makes the recompress stage resumable.
+	with open(path, 'rb') as file_handle:
+		return zstandard.get_frame_parameters(file_handle.read(18)).has_checksum
+
+
+def recompress_file(path, level, threads):
+	old_size = os.path.getsize(path)
+	temp_path = path + ".recompress"
+	try:
+		lines, size = count_lines_bytes(path)
+		params = zstandard.ZstdCompressionParameters(
+			compression_level=level, window_log=LONG_WINDOW_LOG, enable_ldm=True,
+			write_content_size=True, write_checksum=True, threads=threads)
+		with open(path, 'rb') as input_handle, open(temp_path, 'wb') as output_handle:
+			reader = zstandard.ZstdDecompressor(max_window_size=2**LONG_WINDOW_LOG).stream_reader(input_handle)
+			zstandard.ZstdCompressor(compression_params=params).copy_stream(reader, output_handle, size=size)
+		new_lines, new_size = count_lines_bytes(temp_path)
+		if (new_lines, new_size) != (lines, size):
+			os.remove(temp_path)
+			return path, old_size, None, f"recompressed file has {new_lines:,} lines and {new_size:,} bytes, original has {lines:,} and {size:,}, kept the original"
+		os.replace(temp_path, path)
+		return path, old_size, os.path.getsize(path), None
+	except Exception as err:
+		if os.path.exists(temp_path):
+			os.remove(temp_path)
+		return path, old_size, None, f"{type(err).__name__}: {err}"
+
+
+def recompress_outputs(output_folder, level, processes, threads):
+	paths = []
+	for file_name in os.listdir(output_folder):
+		path = os.path.join(output_folder, file_name)
+		if file_name.endswith(OUTPUT_SUFFIXES) and not is_recompressed(path):
+			paths.append(path)
+	# largest first so the slowest files are not left running alone at the end
+	paths.sort(key=os.path.getsize, reverse=True)
+	log.info(f"Recompressing {len(paths):,} output files at level {level} with a 2 GiB window, {processes} processes, {threads} threads each")
+	if not paths:
+		return 0
+	total_old, total_new, done, errors = 0, 0, 0, 0
+	start_time = time.time()
+	with multiprocessing.Pool(processes=min(processes, len(paths))) as pool:
+		for path, old_size, new_size, error in pool.imap_unordered(recompress_wrapper, [(path, level, threads) for path in paths]):
+			done += 1
+			if error is not None:
+				errors += 1
+				log.warning(f"Recompress failed {path}: {error}")
+				continue
+			total_old += old_size
+			total_new += new_size
+			if done % 1000 == 0 or old_size > 2**30:
+				log.info(
+					f"Recompressed {done:,}/{len(paths):,} files, {errors} failed : {path} {old_size:,} to {new_size:,} : "
+					f"{total_old / 2**30:.2f} to {total_new / 2**30:.2f} gb in {(time.time() - start_time) / 3600:.1f} hours")
+	log.info(f"Recompressed {done - errors:,}/{len(paths):,} files, {errors} failed : {total_old / 2**30:.2f} to {total_new / 2**30:.2f} gb")
+	return errors
+
+
+def recompress_wrapper(arguments):
+	return recompress_file(*arguments)
+
+
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description="Use multiple processes to decompress and iterate over pushshift dump files")
 	parser.add_argument("input", help="The input folder to recursively read files from")
@@ -301,6 +388,14 @@ if __name__ == '__main__':
 	parser.add_argument("--value_list", help="A file of newline separated values to use. Overrides the value param if it is set", default=None)
 	parser.add_argument("--processes", help="Number of processes to use", default=10, type=int)
 	parser.add_argument("--file_filter", help="Regex filenames have to match to be processed", default="^RC_|^RS_")
+	parser.add_argument(
+		"--level", type=int, default=None,
+		help="After combining, recompress each output file at this zstd level with a 2 GiB long distance window, "
+		"the same as `zstd -<level> --ultra --long=31`. Decompress them with `zstd -d --long=31`. Requires --output")
+	parser.add_argument(
+		"--recompress_threads", type=int, default=0,
+		help="zstd worker threads for each recompressing process, 0 for single threaded. Each process uses up to about 3 GB of memory "
+		"single threaded, more with threads")
 	parser.add_argument(
 		"--split_intermediate",
 		help="Split the intermediate files by the first letter of the matched field, use if the filter will result in a large number of separate files",
@@ -338,6 +433,10 @@ if __name__ == '__main__':
 
 	if (args.partial or args.regex or args.single_output) and args.split_intermediate:
 		log.info("The partial, regex and single_output flags are not compatible with the split_intermediate flag")
+		sys.exit(1)
+
+	if args.level is not None and not args.output:
+		log.info("The level flag needs --output, so the recompress only touches this run's output folder")
 		sys.exit(1)
 
 	values = set()
@@ -595,3 +694,8 @@ if __name__ == '__main__':
 			output_handles = {}
 
 	log.info(f"From {files_combined}/{count_intermediate_files} files to {len(output_handles):,} output handles : {output_lines:,}/{total_lines_matched:,} lines")
+
+	if args.level is not None:
+		if recompress_outputs(args.output, args.level, args.processes, args.recompress_threads):
+			log.warning("Some files failed to recompress and were left at the default level, run the script again to retry them")
+			sys.exit(1)

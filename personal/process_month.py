@@ -4,6 +4,7 @@ sys.path.append('combine')
 sys.path.append('personal/combine')
 
 import os
+import shutil
 import argparse
 import json
 import logging.handlers
@@ -64,11 +65,15 @@ def load_status(status_json):
 				"split": False,
 				"merge": None,  # 24-02-01
 				"build": False,
+				"verify": False,
+				"cleanup": False,
 			},
 			"submission": {
 				"split": False,
 				"merge": None,  # 24-02-01
 				"build": False,
+				"verify": False,
+				"cleanup": False,
 			}
 		}
 		return stages, None
@@ -78,7 +83,19 @@ def end_of_day(input_minute):
 	return input_minute.replace(hour=0, minute=0, second=0) + timedelta(days=1)
 
 
-def process(queue, base_folder, month, file_type, type_stages, reddit_username, compression_level, ignore_ids, token_host, token_path):
+def delete_minute_files(base_folder, month_start, file_type):
+	"""Remove this month's per-minute download and combined day folders for one type."""
+	count_folders = 0
+	for day in build_month.month_days(month_start):
+		for stage_folder in ("download", "combined"):
+			day_folder = os.path.join(base_folder, "ingest", stage_folder, file_type + "s", day.strftime('%y-%m-%d'))
+			if os.path.exists(day_folder):
+				shutil.rmtree(day_folder)
+				count_folders += 1
+	return count_folders
+
+
+def process(queue, base_folder, month, file_type, type_stages, reddit_username, compression_level, ignore_ids, token_host, token_path, threads, keep_minute_files):
 	try:
 		# for stage, status in type_stages.items():
 		# 	log.info(f"{file_type} {stage}: {status}")
@@ -159,11 +176,39 @@ def process(queue, base_folder, month, file_type, type_stages, reddit_username, 
 				input_folder,
 				output_folder,
 				file_type+"s",
-				compression_level
+				compression_level,
+				threads
 			)
 			queue.put((file_type, "build", True))
 			log.warning(f"{file_type}: {file_type} build complete")
 			discord_logging.flush_discord()
+
+		# Keep the minute files until the month file is proven to hold exactly what they hold.
+		# verify and cleanup are separate stages so a restart after a partial delete does not
+		# try to re-verify against minute files that are already gone.
+		if keep_minute_files:
+			log.info(f"{file_type}: Keeping minute files, skipping verify and cleanup")
+		else:
+			start_date = datetime.strptime(month, "%y-%m")
+			if not type_stages.get("verify", False):
+				log.info(f"{file_type}: Starting {file_type} verify")
+				ok, message = build_month.verify_month(
+					start_date,
+					os.path.join(base_folder, "ingest", "combined"),
+					os.path.join(base_folder, "reddit"),
+					file_type+"s"
+				)
+				if not ok:
+					raise RuntimeError(f"Verify failed, keeping minute files: {message}")
+				queue.put((file_type, "verify", True))
+				log.warning(f"{file_type}: {file_type} verify complete: {message}")
+				discord_logging.flush_discord()
+
+			if not type_stages.get("cleanup", False):
+				count_folders = delete_minute_files(base_folder, start_date, file_type)
+				queue.put((file_type, "cleanup", True))
+				log.warning(f"{file_type}: {file_type} cleanup complete: deleted {count_folders} day folders of download and combined minute files")
+				discord_logging.flush_discord()
 
 		log.warning(f"{file_type}: {file_type} all steps complete")
 
@@ -189,6 +234,8 @@ if __name__ == "__main__":
 	parser.add_argument('folder', help='Folder under which all the files are stored', nargs='?')
 	parser.add_argument("--ignore_ids", help="Ignore ids between the id ranges listed", default=None)
 	parser.add_argument("--level", help="The compression ratio to output at", default="22")
+	parser.add_argument("--threads", help="zstd worker threads for the build, -1 for one per core, 0 for single threaded", default=-1, type=int)
+	parser.add_argument("--keep_minute_files", help="Do not verify the month files or delete the download and combined minute files afterwards", action='store_const', const=True, default=False)
 	parser.add_argument("--token_host", help="ssh host that runs PushshiftIngest; the pushshift token is read from there and never refreshed here", required=True)
 	parser.add_argument("--token_path", help="Path of the token file on token_host", default="PushshiftIngest/pushshift_token.txt")
 	parser.add_argument("--check_token", help="Only fetch the token once over ssh, report ok or the error, and exit", action='store_const', const=True, default=False)
@@ -223,7 +270,7 @@ if __name__ == "__main__":
 	month = args.month
 	log.info(f"Processing {month}")
 	level = int(args.level)
-	log.info(f"Compression level: {level}")
+	log.info(f"Compression level: {level}, threads: {args.threads}, keep minute files: {args.keep_minute_files}")
 
 	multiprocessing.set_start_method('spawn', force=True)
 	queue = multiprocessing.Manager().Queue()
@@ -231,7 +278,7 @@ if __name__ == "__main__":
 	with multiprocessing.Pool(processes=2, initializer=init, initargs=(p_lock,)) as pool:
 		arguments = []
 		for file_type, type_stages in stages.items():
-			arguments.append((queue, args.folder, month, file_type, type_stages, "Watchful12", level, ignore_ids, args.token_host, args.token_path))
+			arguments.append((queue, args.folder, month, file_type, type_stages, "Watchful12", level, ignore_ids, args.token_host, args.token_path, args.threads, args.keep_minute_files))
 		workers = pool.starmap_async(process, arguments, chunksize=1, error_callback=log.info)
 		while not workers.ready() or not queue.empty():
 			file_type, stage, status = queue.get()
