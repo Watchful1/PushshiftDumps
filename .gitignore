@@ -4,3 +4,5 @@ __pycache__/*
 *.db
 *.ini
 *.txt
+docs/runbooks/
+personal/BUILD_MONTH_PLAN.md
