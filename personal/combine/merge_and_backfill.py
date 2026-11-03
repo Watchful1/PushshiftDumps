@@ -30,7 +30,8 @@ reg = re.compile(r"\d\d-\d\d-\d\d_\d\d-\d\d")
 
 TOKEN_SSH_TIMEOUT_SECONDS = 60
 TOKEN_WAIT_SECONDS = 30
-TOKEN_WAIT_LIMIT_SECONDS = 15 * 60
+TOKEN_WAIT_MAX_SECONDS = 60 * 60
+TOKEN_WAIT_LIMIT_SECONDS = 24 * 60 * 60
 
 
 def fetch_pushshift_token(token_host, token_path):
@@ -56,8 +57,10 @@ class PushshiftTokenFetcher:
 	"""Read-only view of the token the ingest refreshes on token_host.
 
 	The ingest is the only process that may call auth.pushshift.io/refresh, so on a 403 this
-	just re-fetches the file and waits for the ingest to change it. A transient ssh failure is
-	treated the same as an unchanged token: retried every TOKEN_WAIT_SECONDS until the deadline.
+	just re-fetches the file and waits for the ingest to change it, which can take hours when the
+	token has to be replaced by hand. A transient ssh failure is treated the same as an unchanged
+	token. Retries start TOKEN_WAIT_SECONDS apart and double up to TOKEN_WAIT_MAX_SECONDS until
+	TOKEN_WAIT_LIMIT_SECONDS have passed.
 	Pass a lock when several workers share one so they do not all hit ssh at once; it is only
 	held around the ssh call itself, never across a sleep.
 	"""
@@ -78,6 +81,7 @@ class PushshiftTokenFetcher:
 
 	def _wait_for_token(self, failed_token, waiting_for):
 		deadline = time.monotonic() + TOKEN_WAIT_LIMIT_SECONDS
+		wait_seconds = TOKEN_WAIT_SECONDS
 		first_wait = True
 		while True:
 			try:
@@ -87,16 +91,20 @@ class PushshiftTokenFetcher:
 				token = failed_token
 			if token != failed_token:
 				return token
-			if time.monotonic() >= deadline:
+			remaining_seconds = deadline - time.monotonic()
+			if remaining_seconds <= 0:
 				raise RuntimeError(
-					f"Could not get {waiting_for} from {self.token_host} in {TOKEN_WAIT_LIMIT_SECONDS // 60} minutes, is the ingest refreshing it?")
-			message = f"Pushshift token not available yet ({waiting_for}), waiting {TOKEN_WAIT_SECONDS}s for the ingest"
+					f"Could not get {waiting_for} from {self.token_host} in {TOKEN_WAIT_LIMIT_SECONDS // 3600} hours, is the ingest refreshing it?")
+			sleep_seconds = min(wait_seconds, remaining_seconds)
 			if first_wait:
-				log.warning(message)
+				log.warning(
+					f"Pushshift token not available yet ({waiting_for}), waiting for the ingest, retrying for up to "
+					f"{TOKEN_WAIT_LIMIT_SECONDS // 3600} hours")
 				first_wait = False
 			else:
-				log.info(message)
-			time.sleep(TOKEN_WAIT_SECONDS)
+				log.info(f"Pushshift token not available yet ({waiting_for}), retrying in {int(sleep_seconds)}s")
+			time.sleep(sleep_seconds)
+			wait_seconds = min(wait_seconds * 2, TOKEN_WAIT_MAX_SECONDS)
 
 	def __call__(self, failed_token):
 		if failed_token is None:
