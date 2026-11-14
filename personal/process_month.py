@@ -7,6 +7,7 @@ import os
 import shutil
 import argparse
 import json
+import queue as queue_lib
 import logging.handlers
 import praw
 import traceback
@@ -281,7 +282,12 @@ if __name__ == "__main__":
 			arguments.append((queue, args.folder, month, file_type, type_stages, "Watchful12", level, ignore_ids, args.token_host, args.token_path, args.threads, args.keep_minute_files))
 		workers = pool.starmap_async(process, arguments, chunksize=1, error_callback=log.info)
 		while not workers.ready() or not queue.empty():
-			file_type, stage, status = queue.get()
+			# A timeout, so the loop sees the workers finish after their last status message
+			# instead of blocking on an empty queue forever.
+			try:
+				file_type, stage, status = queue.get(timeout=60)
+			except queue_lib.Empty:
+				continue
 			if stage == "error":
 				log.error(f"Error in {file_type}: {status}")
 			stages[file_type][stage] = status
